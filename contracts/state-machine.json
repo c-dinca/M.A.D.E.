@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/state-machine.json",
+  "title": "M.A.D.E. run state machine",
+  "description": "Normative. States, transitions, guards and per-State tool authority. The database CHECK constraint on runs.state, the routing predicates in made/orchestrator/routing.py and the toolbelt factory in made/tools/toolbelt.py MUST all agree with this document. Prose description: docs/02-architecture/05-orchestration-and-termination.md",
+  "version": "1.0.0",
+
+  "tools": [
+    "read_range",
+    "grep",
+    "list_dir",
+    "symbol_def",
+    "references",
+    "apply_patch",
+    "run_verification"
+  ],
+
+  "task_kinds": ["code", "test", "iac", "docs"],
+
+  "agent_roles": ["ARCHITECT", "DEVELOPER", "QA", "DEVOPS", "REVIEWER"],
+
+  "await_reasons": [
+    "plan_approval",
+    "delivery_approval",
+    "ambiguous_request",
+    "task_failed",
+    "budget_exhausted",
+    "cycle_detected",
+    "integration_failed",
+    "provider_unavailable",
+    "delivery_failed",
+    "policy_violation"
+  ],
+
+  "terminal_reasons": [
+    "delivered",
+    "rejected_invalid_request",
+    "rejected_policy",
+    "cancelled_by_human",
+    "ttl_expired",
+    "approval_ttl_expired"
+  ],
+
+  "event_kinds": [
+    "run_created",
+    "state_entered",
+    "artifact_produced",
+    "patch_applied",
+    "patch_rejected",
+    "exec_started",
+    "exec_completed",
+    "llm_call",
+    "verification_completed",
+    "review_completed",
+    "guard_tripped",
+    "budget_denied",
+    "egress_decision",
+    "sandbox_created",
+    "sandbox_destroyed",
+    "human_signal",
+    "recovery_performed",
+    "run_finished"
+  ],
+
+  "guards": [
+    {
+      "id": "GUARD_PLAN_VALID",
+      "description": "Rejects a TaskGraph containing a cycle, exceeding the Project Task ceiling, or containing any Task with an empty or absent verification_command.",
+      "evaluated_on": ["PLAN"],
+      "on_refusal": "AWAIT_HUMAN",
+      "requirements": ["FR-024", "FR-025", "FR-030"]
+    },
+    {
+      "id": "GUARD_ATTEMPT_CAP",
+      "description": "Refuses a further Attempt when the Task cap (default 3) or the Run total cap (default 12) is reached. Counted from persisted Attempts so a restart cannot reset it.",
+      "evaluated_on": ["IMPLEMENT", "VERIFY", "REVIEW"],
+      "on_refusal": "TASK_FAILED",
+      "requirements": ["FR-039", "NFR-010"]
+    },
+    {
+      "id": "GUARD_PROGRESS",
+      "description": "Permits a retry only when the new Attempt has a patch hash unseen in this Task AND either a new normalised failure signature or a lower failing count than the previous Attempt.",
+      "evaluated_on": ["VERIFY"],
+      "on_refusal": "TASK_FAILED",
+      "requirements": ["FR-040", "NFR-012"]
+    },
+    {
+      "id": "GUARD_CYCLE",
+      "description": "Refuses re-entry when the tuple (state, task_id, workspace_tree_hash, sorted input artifact digests) repeats within a Run.",
+      "evaluated_on": ["SPEC", "PLAN", "TASK_SELECT", "IMPLEMENT", "VERIFY", "REVIEW", "INTEGRATE"],
+      "on_refusal": "AWAIT_HUMAN",
+      "requirements": ["FR-041"]
+    },
+    {
+      "id": "GUARD_BUDGET",
+      "description": "Pre-flight admission before every model call against Task, Run, Project and deployment ceilings, using a tokeniser-measured prompt estimate plus maximum output tokens. Refusal is a transition, never an exception, and never a tier downgrade.",
+      "evaluated_on": ["INTAKE", "SPEC", "PLAN", "IMPLEMENT", "REVIEW"],
+      "on_refusal": "AWAIT_HUMAN",
+      "requirements": ["FR-049", "FR-051", "NFR-009"]
+    },
+    {
+      "id": "GUARD_PATCH_POLICY",
+      "description": "Rejects patches touching paths outside the workspace root after symlink resolution, exceeding the size cap, or modifying CI configuration, git hooks or submodule pointers.",
+      "evaluated_on": ["IMPLEMENT"],
+      "on_refusal": "TASK_FAILED",
+      "requirements": ["FR-036"]
+    }
+  ],
+
+  "states": [
+    {
+      "name": "INTAKE",
+      "kind": "working",
+      "actor": "system",
+      "tools": [],
+      "description": "Validate the request, resolve the base commit, admit the budget, refuse a default-branch target."
+    },
+    {
+      "name": "SPEC",
+      "kind": "working",
+      "actor": "ARCHITECT",
+      "tools": ["read_range", "grep", "list_dir", "symbol_def", "references"],
+      "description": "Produce a Spec artifact. Read-only."
+    },
+    {
+      "name": "PLAN",
+      "kind": "working",
+      "actor": "ARCHITECT",
+      "tools": ["read_range", "grep", "list_dir", "symbol_def", "references"],
+      "description": "Produce a TaskGraph. Every Task must carry a verification_command."
+    },
+    {
+      "name": "TASK_SELECT",
+      "kind": "working",
+      "actor": "system",
+      "tools": [],
+      "description": "Select the next ready Task in topological order. Sequential only in v1."
+    },
+    {
+      "name": "IMPLEMENT",
+      "kind": "working",
+      "actor": "by_task_kind",
+      "tools": ["read_range", "grep", "list_dir", "symbol_def", "references", "apply_patch"],
+      "description": "The role implied by task.kind produces a Patch. code->DEVELOPER, test->QA, iac->DEVOPS, docs->DEVELOPER."
+    },
+    {
+      "name": "VERIFY",
+      "kind": "working",
+      "actor": "system",
+      "tools": ["run_verification"],
+      "description": "Execute the Task verification_command verbatim in a Sandbox with no network. No model is invoked in this State and no write tool is available."
+    },
+    {
+      "name": "REVIEW",
+      "kind": "working",
+      "actor": "REVIEWER",
+      "tools": ["read_range", "grep", "list_dir", "symbol_def", "references"],
+      "description": "Advisory review of the diff. Cannot mark success."
+    },
+    {
+      "name": "TASK_DONE",
+      "kind": "working",
+      "actor": "system",
+      "tools": [],
+      "description": "Record Task completion and return to selection."
+    },
+    {
+      "name": "TASK_FAILED",
+      "kind": "working",
+      "actor": "system",
+      "tools": [],
+      "description": "Record Task failure. Always escalates."
+    },
+    {
+      "name": "INTEGRATE",
+      "kind": "working",
+      "actor": "system",
+      "tools": ["run_verification"],
+      "description": "Run the Project full verification suite; after delivery approval, push the branch and open a pull request."
+    },
+    {
+      "name": "AWAIT_HUMAN",
+      "kind": "waiting",
+      "actor": "human",
+      "tools": [],
+      "description": "Durable wait carrying a reason and a resume_to State. The Sandbox is destroyed on entry and recreated on resume."
+    },
+    {
+      "name": "DONE",
+      "kind": "terminal",
+      "actor": "system",
+      "tools": [],
+      "description": "Delivered."
+    },
+    {
+      "name": "REJECTED",
+      "kind": "terminal",
+      "actor": "system",
+      "tools": [],
+      "description": "Refused at intake: invalid request, unresolvable base ref, policy violation, or no budget."
+    },
+    {
+      "name": "ABORTED",
+      "kind": "terminal",
+      "actor": "system",
+      "tools": [],
+      "description": "Cancelled by a human, or terminated by a wall-clock or approval TTL."
+    }
+  ],
+
+  "initial_state": "INTAKE",
+
+  "transitions": [
+    { "from": "INTAKE", "to": "SPEC", "on": "request_validated", "guard": "GUARD_BUDGET" },
+    { "from": "INTAKE", "to": "REJECTED", "on": "request_rejected", "guard": null },
+
+    { "from": "SPEC", "to": "PLAN", "on": "spec_produced", "guard": "GUARD_CYCLE" },
+    { "from": "SPEC", "to": "AWAIT_HUMAN", "on": "ambiguity_detected", "guard": null },
+
+    { "from": "PLAN", "to": "TASK_SELECT", "on": "plan_accepted", "guard": "GUARD_PLAN_VALID" },
+    { "from": "PLAN", "to": "AWAIT_HUMAN", "on": "plan_approval_required", "guard": null },
+    { "from": "PLAN", "to": "AWAIT_HUMAN", "on": "plan_invalid_final", "guard": "GUARD_PLAN_VALID" },
+
+    { "from": "TASK_SELECT", "to": "IMPLEMENT", "on": "task_selected", "guard": "GUARD_CYCLE" },
+    { "from": "TASK_SELECT", "to": "INTEGRATE", "on": "tasks_exhausted", "guard": null },
+
+    { "from": "IMPLEMENT", "to": "VERIFY", "on": "patch_applied", "guard": "GUARD_PATCH_POLICY" },
+    { "from": "IMPLEMENT", "to": "TASK_FAILED", "on": "patch_rejected", "guard": "GUARD_ATTEMPT_CAP" },
+    { "from": "IMPLEMENT", "to": "AWAIT_HUMAN", "on": "budget_denied", "guard": "GUARD_BUDGET" },
+
+    { "from": "VERIFY", "to": "REVIEW", "on": "verification_passed", "guard": null },
+    { "from": "VERIFY", "to": "IMPLEMENT", "on": "verification_failed_retryable", "guard": "GUARD_PROGRESS" },
+    { "from": "VERIFY", "to": "TASK_FAILED", "on": "verification_failed_final", "guard": "GUARD_PROGRESS" },
+
+    { "from": "REVIEW", "to": "TASK_DONE", "on": "review_approved", "guard": null },
+    { "from": "REVIEW", "to": "IMPLEMENT", "on": "review_revise", "guard": "GUARD_ATTEMPT_CAP" },
+    { "from": "REVIEW", "to": "AWAIT_HUMAN", "on": "review_escalate", "guard": null },
+
+    { "from": "TASK_DONE", "to": "TASK_SELECT", "on": "task_completed", "guard": null },
+    { "from": "TASK_FAILED", "to": "AWAIT_HUMAN", "on": "task_failed", "guard": null },
+
+    { "from": "INTEGRATE", "to": "AWAIT_HUMAN", "on": "delivery_approval_required", "guard": null },
+    { "from": "INTEGRATE", "to": "AWAIT_HUMAN", "on": "integration_failed", "guard": null },
+    { "from": "INTEGRATE", "to": "AWAIT_HUMAN", "on": "delivery_failed", "guard": null },
+    { "from": "INTEGRATE", "to": "DONE", "on": "delivered", "guard": null },
+
+    { "from": "AWAIT_HUMAN", "to": "PLAN", "on": "human_amend_plan", "guard": null },
+    { "from": "AWAIT_HUMAN", "to": "TASK_SELECT", "on": "human_approve_plan", "guard": null },
+    { "from": "AWAIT_HUMAN", "to": "IMPLEMENT", "on": "human_unblock_task", "guard": null },
+    { "from": "AWAIT_HUMAN", "to": "INTEGRATE", "on": "human_approve_delivery", "guard": null },
+    { "from": "AWAIT_HUMAN", "to": "ABORTED", "on": "approval_ttl_expired", "guard": null }
+  ],
+
+  "global_transitions": [
+    {
+      "from": "any_non_terminal",
+      "to": "ABORTED",
+      "on": "run_cancelled",
+      "guard": null,
+      "description": "Operator cancellation. Destroys the Sandbox, records a terminal event, leaves the branch intact."
+    },
+    {
+      "from": "any_non_terminal",
+      "to": "ABORTED",
+      "on": "ttl_expired",
+      "guard": null,
+      "description": "Run wall-clock TTL. Delivered as an event by the driver; never evaluated inside a routing predicate."
+    }
+  ],
+
+  "invariants": [
+    "No transition has from == to. There are no self-loops.",
+    "Every non-terminal State has at least one outgoing transition to a terminal State or to AWAIT_HUMAN, directly or transitively.",
+    "No failure transition targets the State it originates from.",
+    "VERIFY has no model actor and no write tool, in every configuration.",
+    "AWAIT_HUMAN is the only State with actor 'human'.",
+    "DONE, REJECTED and ABORTED have no outgoing transitions."
+  ]
+}

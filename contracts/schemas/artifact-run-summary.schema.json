@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-run-summary.schema.json",
+  "title": "RunSummary artifact",
+  "description": "Written when a Run reaches a terminal State, and used as the pull-request body. Reports the outcome honestly: per-Task verification status in the three permitted words, spend against ceiling, and the attempt trail. A Run with any failed Task is not reported as successful (FR-045).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "outcome", "terminal_state", "spent_usd", "ceiling_usd", "tasks"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "run_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "terminal_state": { "$ref": "common.schema.json#/$defs/State" },
+    "outcome": {
+      "enum": ["delivered", "escalated", "aborted", "rejected"],
+      "description": "'delivered' requires every Task verified and a recorded delivery approval."
+    },
+    "terminal_reason": { "type": ["string", "null"] },
+    "spent_usd": { "$ref": "common.schema.json#/$defs/UsdAmount" },
+    "ceiling_usd": { "$ref": "common.schema.json#/$defs/UsdAmount" },
+    "duration_s": { "type": "integer", "minimum": 0 },
+    "sandbox_seconds": { "type": "integer", "minimum": 0 },
+    "branch": { "type": ["string", "null"] },
+    "head_commit": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" },
+    "pull_request_url": { "type": ["string", "null"], "format": "uri" },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "kind", "status", "verification"],
+        "properties": {
+          "task_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+          "kind": { "$ref": "common.schema.json#/$defs/TaskKind" },
+          "status": { "enum": ["DONE", "FAILED", "PENDING"] },
+          "verification": { "$ref": "common.schema.json#/$defs/VerificationOutcome" },
+          "attempts": { "type": "integer", "minimum": 0 },
+          "cost_usd": { "$ref": "common.schema.json#/$defs/UsdAmount" }
+        }
+      }
+    }
+  }
+}

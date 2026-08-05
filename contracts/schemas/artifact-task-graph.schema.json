@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-task-graph.schema.json",
+  "title": "TaskGraph artifact",
+  "description": "Produced by the Architect in PLAN. A directed acyclic graph of Tasks. Every Task MUST carry a non-empty verification_command: work that cannot be checked never enters the queue (FR-024, ADR-0014). Acyclicity and the Project Task ceiling are enforced by GUARD_PLAN_VALID, which this schema cannot express.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "spec_sha256", "tasks"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "spec_sha256": { "$ref": "common.schema.json#/$defs/Sha256" },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/Task" }
+    }
+  },
+  "$defs": {
+    "Task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["local_id", "kind", "intent", "verification_command", "depends_on"],
+      "properties": {
+        "local_id": {
+          "type": "string",
+          "pattern": "^T[0-9]{2}$",
+          "description": "Unique within this graph. Persisted Tasks receive UUIDs; the local id exists so the model can express dependencies without inventing UUIDs."
+        },
+        "kind": { "$ref": "common.schema.json#/$defs/TaskKind" },
+        "intent": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "verification_command": {
+          "$ref": "common.schema.json#/$defs/Argv",
+          "description": "The oracle. Executed verbatim in a Sandbox with no network; its exit code is the sole determinant of success. Immutable after plan acceptance (FR-034)."
+        },
+        "verification_source": {
+          "enum": ["project_template", "architect_generated"],
+          "default": "project_template",
+          "description": "Which path produced the command. Architect-generated commands are accepted only when the Project enables them; see OQ-07."
+        },
+        "pre_change_must_fail": {
+          "type": "boolean",
+          "default": false,
+          "description": "Required true for Tasks of kind 'test': the command must fail against the pre-change tree and pass after, otherwise a trivially-passing test would verify itself."
+        },
+        "target_paths": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "$ref": "common.schema.json#/$defs/WorkspacePath" },
+          "description": "A retrieval hint, not a constraint. The patch policy validator, not this list, decides what may be written."
+        },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string", "pattern": "^T[0-9]{2}$" }
+        },
+        "ceiling_usd": { "$ref": "common.schema.json#/$defs/UsdAmount" },
+        "max_attempts": { "type": "integer", "minimum": 1, "maximum": 10 }
+      }
+    }
+  }
+}

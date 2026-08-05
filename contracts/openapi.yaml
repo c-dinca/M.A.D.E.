@@ -1,0 +1,642 @@
+openapi: 3.1.0
+
+info:
+  title: M.A.D.E. control API
+  version: "1.0.0"
+  description: |
+    Normative. Prose and rationale: docs/02-architecture/03-api-design.md.
+
+    The API starts Runs, observes them, approves them and audits them. It deliberately does NOT:
+
+      * execute anything on demand — no "run this command", no "call this model", no "apply this
+        patch". Every execution is a consequence of a Run advancing through its state machine. An
+        arbitrary-execution endpoint would bypass the state machine, the budget and the audit trail.
+      * mutate history — events, artifacts, attempts and approvals have no update or delete route.
+      * return secret material — credentials are write-only, including for the operator role.
+      * change a Task's verification_command — it is fixed at plan acceptance (FR-034). An edit
+        would let a caller redefine success after the fact.
+      * force a state transition — the only human inputs are approval decisions and cancellation.
+
+    Clients MUST ignore unknown response fields; that is what makes additive change safe. Enum values
+    in request position are closed: an unrecognised value is rejected, never defaulted.
+
+servers:
+  - url: http://localhost:8080/v1
+    description: Default single-host deployment, bound to localhost
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: projects
+  - name: runs
+  - name: approvals
+  - name: audit
+  - name: system
+
+paths:
+  /healthz:
+    get:
+      tags: [system]
+      summary: Liveness and dependency status
+      description: |
+        Reports the state of each dependency honestly. A degraded dependency appears as degraded; it
+        is never omitted to keep the response green.
+      security: []
+      operationId: getHealth
+      responses:
+        "200":
+          description: Status report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+
+  /projects:
+    get:
+      tags: [projects]
+      summary: List Projects
+      operationId: listProjects
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AfterId"
+      responses:
+        "200":
+          description: Projects
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Project" }
+                  next_after_id:
+                    type: [string, "null"]
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+    post:
+      tags: [projects]
+      summary: Register a Project
+      description: |
+        Executes the declared baseline verification command against the base branch in a Sandbox and
+        refuses registration if it does not exit 0 (FR-004). A repository the system cannot verify
+        against is refused rather than accepted and served dishonestly.
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProjectCreate" }
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422":
+          description: |
+            Rejected by policy. Codes: baseline_verification_failed, image_not_pinned,
+            policy_violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+
+  /projects/{project_id}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      tags: [projects]
+      summary: Get a Project
+      operationId: getProject
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /runs:
+    get:
+      tags: [runs]
+      summary: List Runs
+      operationId: listRuns
+      parameters:
+        - name: project_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: state
+          in: query
+          schema: { $ref: "#/components/schemas/State" }
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/AfterId"
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Run" }
+                  next_after_id:
+                    type: [string, "null"]
+    post:
+      tags: [runs]
+      summary: Create a Run
+      description: |
+        Returns 202: the Run is accepted and begins in INTAKE. The outcome is learned by polling, not
+        from this response — reporting queued work as complete is forbidden.
+
+        The idempotency key is scoped to the Project. A repeat with the same key returns the original
+        Run with 200. A repeat with the same key and a materially different body is 409: returning
+        the original would hide a client bug, and creating a second Run would double-spend.
+      operationId: createRun
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RunCreate" }
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "200":
+          description: Existing Run returned for a repeated idempotency key
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409":
+          description: "Codes: idempotency_key_conflict"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "422":
+          description: |
+            Rejected by policy. Codes: default_branch_forbidden, unsupported_base_ref,
+            budget_exceeded, policy_violation.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "429":
+          description: "Codes: too_many_runs. Concurrency is refused rather than queued, because an invisible queue makes cost and latency unpredictable."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+        "503": { $ref: "#/components/responses/DependencyUnavailable" }
+
+  /runs/{run_id}:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    get:
+      tags: [runs]
+      summary: Get a Run
+      operationId: getRun
+      responses:
+        "200":
+          description: Run
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /runs/{run_id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    post:
+      tags: [runs]
+      summary: Cancel a Run
+      description: Destroys the Sandbox, records a terminal event, and leaves the branch intact for inspection.
+      operationId: cancelRun
+      responses:
+        "202":
+          description: Cancellation accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "Codes: run_already_terminal"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /runs/{run_id}/events:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    get:
+      tags: [runs]
+      summary: List Run events
+      description: |
+        Cursor pagination by sequence, never by offset. run_events is append-only and grows while a
+        client reads it, so an offset-based second page silently skips rows — and a silently skipped
+        audit record is a defect.
+      operationId: listRunEvents
+      parameters:
+        - name: after_seq
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Events in ascending sequence order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/RunEvent" }
+                  next_after_seq:
+                    type: [integer, "null"]
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /runs/{run_id}/approvals:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    post:
+      tags: [approvals]
+      summary: Record a human decision on a parked Run
+      description: |
+        Idempotent on (run_id, awaiting_state, decision), because approval links get clicked twice.
+
+        shown_artifacts records what the actor was shown. An approval of a plan the human never saw
+        is not an approval, and recording the digests is what makes that checkable afterwards.
+      operationId: createApproval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalCreate" }
+      responses:
+        "201":
+          description: Recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Approval" }
+        "200":
+          description: Already recorded; the original approval is returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Approval" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "Codes: invalid_state_transition, run_already_terminal"
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  /runs/{run_id}/audit:
+    parameters:
+      - $ref: "#/components/parameters/RunId"
+    get:
+      tags: [audit]
+      summary: Export the complete audit record
+      description: |
+        Newline-delimited JSON, one event per line, ascending by sequence, conforming to
+        contracts/schemas/run-event.schema.json. A flat stream rather than a report, because the
+        person who reads it wants to grep it and keep it.
+      operationId: exportRunAudit
+      responses:
+        "200":
+          description: Audit stream
+          content:
+            application/x-ndjson:
+              schema:
+                type: string
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        An API key mapped to one of three roles. operator may do everything; submitter may create
+        Runs on existing Projects and approve them; auditor is read-only and cannot create a Run.
+        There is no cookie session and no OAuth flow: the run viewer authenticates with the same key
+        behind the operator's own network boundary.
+
+  parameters:
+    ProjectId:
+      name: project_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    AfterId:
+      name: after_id
+      in: query
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: "Codes: invalid_request"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthenticated:
+      description: "Codes: unauthenticated"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Forbidden:
+      description: "Codes: forbidden_role"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    NotFound:
+      description: "Codes: run_not_found, project_not_found"
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    DependencyUnavailable:
+      description: |
+        A dependency the request needs is unavailable. Codes: sandbox_runtime_unavailable,
+        provider_unavailable, storage_unavailable, git_host_unavailable. Never returned as an empty
+        success.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
+  schemas:
+    ErrorCode:
+      type: string
+      enum:
+        - invalid_request
+        - unauthenticated
+        - forbidden_role
+        - project_not_found
+        - run_not_found
+        - idempotency_key_conflict
+        - invalid_state_transition
+        - run_already_terminal
+        - policy_violation
+        - default_branch_forbidden
+        - unsupported_base_ref
+        - baseline_verification_failed
+        - image_not_pinned
+        - budget_exceeded
+        - too_many_runs
+        - sandbox_runtime_unavailable
+        - provider_unavailable
+        - storage_unavailable
+        - git_host_unavailable
+        - internal_error
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, request_id]
+          properties:
+            code: { $ref: "#/components/schemas/ErrorCode" }
+            message:
+              type: string
+              description: For a human. May change; clients branch on code, never on this.
+            details:
+              type: object
+              additionalProperties: true
+            run_id:
+              type: [string, "null"]
+              format: uuid
+            request_id:
+              type: string
+
+    State:
+      type: string
+      enum:
+        [INTAKE, SPEC, PLAN, TASK_SELECT, IMPLEMENT, VERIFY, REVIEW, TASK_DONE, TASK_FAILED,
+         INTEGRATE, AWAIT_HUMAN, DONE, REJECTED, ABORTED]
+      description: MUST equal the state list in contracts/state-machine.json.
+
+    AwaitReason:
+      type: string
+      enum: [plan_approval, delivery_approval, ambiguous_request, task_failed, budget_exhausted,
+             cycle_detected, integration_failed, provider_unavailable, delivery_failed,
+             policy_violation]
+
+    VerificationOutcome:
+      type: string
+      enum: [verified, failed_verification, not_verified]
+      description: |
+        The only three outcomes. not_verified means the command did not run to completion and MUST
+        NOT be rendered as either success or failure by any surface.
+
+    UsdAmount:
+      type: string
+      pattern: '^-?[0-9]+\.[0-9]{1,6}$'
+      description: Decimal string, never a JSON number. A ledger compared against a hard ceiling cannot lose cents.
+
+    Health:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status: { type: string, enum: [ok, degraded] }
+        version: { type: string }
+        dependencies:
+          type: object
+          additionalProperties:
+            type: object
+            required: [status]
+            properties:
+              status: { type: string, enum: [ok, unavailable, degraded] }
+              detail: { type: string }
+
+    ProjectCreate:
+      type: object
+      additionalProperties: false
+      required: [name, repo_url, default_branch, sandbox_image_digest, baseline_command,
+                 full_suite_command, model_tiers, run_ceiling_usd, project_ceiling_usd,
+                 credential_ref]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        repo_url: { type: string, format: uri }
+        default_branch: { type: string, minLength: 1 }
+        sandbox_image_digest:
+          type: string
+          pattern: '@sha256:[0-9a-f]{64}$'
+          description: Pinned by digest. A mutable tag is rejected (FR-008).
+        baseline_command:
+          type: array
+          items: { type: string }
+          minItems: 1
+          description: Must exit 0 on the base branch at registration, or registration is refused.
+        full_suite_command:
+          type: array
+          items: { type: string }
+          minItems: 1
+        verification_templates:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+          description: |
+            Per Task kind. The required path for producing a Task's verification_command until OQ-07
+            is resolved; Architect-generated commands are accepted only when explicitly enabled.
+        model_tiers:
+          type: object
+          additionalProperties: true
+          description: Endpoint configuration per tier. Never returned in a response.
+        egress_allowlist:
+          type: array
+          items: { type: string }
+          default: []
+          description: Applies to image build only. The empty list is valid and is the default; verification Sandboxes have no network at all.
+        run_ceiling_usd: { $ref: "#/components/schemas/UsdAmount" }
+        project_ceiling_usd: { $ref: "#/components/schemas/UsdAmount" }
+        plan_approval: { type: boolean, default: true }
+        credential_ref:
+          type: string
+          description: |
+            Name of a secret in the host secret store. The value is never accepted inline and never
+            returned, including to the operator role.
+
+    Project:
+      type: object
+      required: [id, name, repo_url, default_branch, config_version, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        repo_url: { type: string }
+        default_branch: { type: string }
+        config_version: { type: integer }
+        sandbox_image_digest: { type: string }
+        plan_approval: { type: boolean }
+        run_ceiling_usd: { $ref: "#/components/schemas/UsdAmount" }
+        project_ceiling_usd: { $ref: "#/components/schemas/UsdAmount" }
+        archived_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    RunCreate:
+      type: object
+      additionalProperties: false
+      required: [project_id, request_text]
+      properties:
+        project_id: { type: string, format: uuid }
+        request_text: { type: string, minLength: 1, maxLength: 8000 }
+        base_ref:
+          type: string
+          description: Branch or commit. Defaults to the Project's default branch tip. The Run always works on its own branch; the default branch is never a target (FR-010).
+        ceiling_usd:
+          $ref: "#/components/schemas/UsdAmount"
+          description: May lower the Project default, never raise it above the Project maximum.
+
+    Run:
+      type: object
+      required: [id, project_id, state, spent_usd, ceiling_usd, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        project_config_version: { type: integer }
+        state: { $ref: "#/components/schemas/State" }
+        await_reason:
+          oneOf:
+            - $ref: "#/components/schemas/AwaitReason"
+            - type: "null"
+        terminal_reason: { type: [string, "null"] }
+        request_text: { type: string }
+        base_commit: { type: string }
+        branch: { type: string }
+        head_commit: { type: [string, "null"] }
+        spent_usd: { $ref: "#/components/schemas/UsdAmount" }
+        ceiling_usd: { $ref: "#/components/schemas/UsdAmount" }
+        sandbox_image_digest: { type: string }
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/TaskSummary" }
+        pull_request_url: { type: [string, "null"], format: uri }
+        created_at: { type: string, format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }
+
+    TaskSummary:
+      type: object
+      required: [id, kind, status, verification]
+      properties:
+        id: { type: string, format: uuid }
+        position: { type: integer }
+        kind: { type: string, enum: [code, test, iac, docs] }
+        intent: { type: string }
+        verification_command:
+          type: array
+          items: { type: string }
+          description: Read-only. There is no endpoint that changes it (FR-034).
+        status: { type: string, enum: [PENDING, RUNNING, DONE, FAILED] }
+        verification: { $ref: "#/components/schemas/VerificationOutcome" }
+        attempts: { type: integer }
+        cost_usd: { $ref: "#/components/schemas/UsdAmount" }
+
+    RunEvent:
+      type: object
+      required: [run_id, seq, occurred_at, kind, state, cost_usd]
+      description: Mirrors contracts/schemas/run-event.schema.json.
+      properties:
+        run_id: { type: string, format: uuid }
+        seq: { type: integer }
+        occurred_at: { type: string, format: date-time }
+        kind: { type: string }
+        state: { $ref: "#/components/schemas/State" }
+        task_id: { type: [string, "null"], format: uuid }
+        attempt_no: { type: [integer, "null"] }
+        artifact_sha: { type: [string, "null"] }
+        cost_usd: { $ref: "#/components/schemas/UsdAmount" }
+        payload: { type: object, additionalProperties: true }
+
+    ApprovalCreate:
+      type: object
+      additionalProperties: false
+      required: [decision, shown_artifacts]
+      properties:
+        decision: { type: string, enum: [approve, revise, amend_plan, cancel] }
+        reason_text: { type: string, maxLength: 2000 }
+        shown_artifacts:
+          type: array
+          items: { type: string, pattern: '^[0-9a-f]{64}$' }
+          description: Digests of the artifacts the actor was shown.
+        amended_plan_sha:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: Required when decision is amend_plan.
+
+    Approval:
+      type: object
+      required: [id, run_id, awaiting_state, decision, actor, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        run_id: { type: string, format: uuid }
+        awaiting_state: { $ref: "#/components/schemas/State" }
+        await_reason: { $ref: "#/components/schemas/AwaitReason" }
+        decision: { type: string, enum: [approve, revise, amend_plan, cancel] }
+        actor: { type: string }
+        reason_text: { type: [string, "null"] }
+        shown_artifacts:
+          type: array
+          items: { type: string }
+        created_at: { type: string, format: date-time }

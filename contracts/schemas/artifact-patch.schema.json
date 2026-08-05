@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-patch.schema.json",
+  "title": "Patch artifact",
+  "description": "Produced in IMPLEMENT. Exact-match search/replace edits (ADR-0008). The search text MUST match the target file byte-exactly and uniquely; ambiguity is a structured rejection, never a fuzzy apply, because a fuzzy match corrupts a file in a way that may still pass verification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "base_commit", "edits", "rationale"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "base_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "The tree this patch was written against. A patch whose base has moved is re-validated, never applied blind."
+    },
+    "edits": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/SearchReplace" }
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Why this change. Carried into the commit body for the human reviewer."
+    }
+  },
+  "$defs": {
+    "SearchReplace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "search", "replace"],
+      "properties": {
+        "path": { "$ref": "common.schema.json#/$defs/WorkspacePath" },
+        "search": {
+          "type": "string",
+          "description": "Must occur exactly once in the file, byte for byte. Empty only when create is true."
+        },
+        "replace": {
+          "type": "string",
+          "description": "May be empty, which deletes the searched text."
+        },
+        "create": {
+          "type": "boolean",
+          "default": false,
+          "description": "True when the edit creates a new file. The path MUST NOT already exist; the applier rejects it if it does."
+        }
+      },
+      "if": {
+        "properties": { "create": { "const": true } },
+        "required": ["create"]
+      },
+      "then": {
+        "properties": { "search": { "const": "" } }
+      },
+      "else": {
+        "properties": { "search": { "minLength": 1 } }
+      }
+    }
+  }
+}
