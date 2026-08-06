@@ -54,6 +54,7 @@ what the definition of done gates on.
 | Reviewing security | [security and compliance](docs/02-architecture/13-security-and-compliance.md), then [execution isolation](docs/02-architecture/04-execution-isolation.md) |
 | Deciding what to build next | [roadmap](docs/05-delivery/01-roadmap.md) and the [open questions](docs/05-delivery/02-backlog.md#open-questions) |
 | Looking for a specific decision | [ADR index](docs/03-adr/README.md) |
+| Wondering whether to trust this specification | [evidence and confidence](docs/00-context/05-evidence-and-confidence.md) |
 | Implementing against an interface | [`contracts/`](contracts/README.md) — normative |
 
 Full index with reading paths: [`docs/README.md`](docs/README.md).

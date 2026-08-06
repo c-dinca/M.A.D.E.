@@ -66,6 +66,14 @@ pass real validators. Generated **prose** is advisory and carries no authority a
 give it — the same rule this repository applies to itself
 ([docs/README.md](../README.md#document-conventions)).
 
+A generated bundle MUST additionally ship an **evidence register** of the kind in
+[00-context/05-evidence-and-confidence.md](../00-context/05-evidence-and-confidence.md): every
+load-bearing claim classified as proven by execution, internally consistent but unproven, assumed, or
+declined as an open question. Without it the customer receives an authoritative-looking document with
+no way to tell which parts were checked, which is the failure this ADR's negative consequences
+describe. The register is generated from the same `spec-lint` report that gates the phase, so it is a
+by-product rather than more prose to trust.
+
 ## Alternatives considered
 
 ### Keep all planning ephemeral, as v1 does — rejected for `create` mode, retained for `change` mode

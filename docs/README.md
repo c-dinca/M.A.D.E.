@@ -20,10 +20,11 @@ the non-negotiable rules and the stop conditions.
 | **I am adding an LLM call or changing a prompt** | [02-architecture/10-llm-integration-and-evaluation.md](02-architecture/10-llm-integration-and-evaluation.md) → [02-architecture/07-cost-control.md](02-architecture/07-cost-control.md) → [02-architecture/08-context-and-retrieval.md](02-architecture/08-context-and-retrieval.md) |
 | **Something is on fire in a running deployment** | [02-architecture/12-observability-and-slos.md](02-architecture/12-observability-and-slos.md) → [02-architecture/09-audit-and-replay.md](02-architecture/09-audit-and-replay.md) → [02-architecture/13-security-and-compliance.md](02-architecture/13-security-and-compliance.md) (incident response) |
 | **I am the founder deciding what to build next** | [05-delivery/01-roadmap.md](05-delivery/01-roadmap.md) → [05-delivery/02-backlog.md](05-delivery/02-backlog.md) (open-questions table) → [00-context/04-business-model.md](00-context/04-business-model.md) |
+| **I want to know whether to trust this specification** | [00-context/05-evidence-and-confidence.md](00-context/05-evidence-and-confidence.md) — what is proven by execution, what is only internally consistent, what is a guess, and the ranked list of load-bearing unproven claims |
 
 ## Structure
 
-- **[00-context/](00-context/)** — why this exists, who is involved, the binding vocabulary, and how it makes money.
+- **[00-context/](00-context/)** — why this exists, who is involved, the binding vocabulary, how it makes money, and [what in this specification is actually established versus assumed](00-context/05-evidence-and-confidence.md).
 - **[01-product/](01-product/)** — scope, personas, user stories, and the numbered requirements every test traces to.
 - **[02-architecture/](02-architecture/)** — how it works. The document set is shaped by the five unforgivable failures named in [02-architecture/01-system-overview.md](02-architecture/01-system-overview.md); risks with their own document are risks that can end the project.
 - **[03-adr/](03-adr/)** — the settled decisions, each with the alternative it beat and the cost it carries.
@@ -56,6 +57,11 @@ Every open question is collected in one table in
 recorded in [00-context/02-ecosystem-and-stakeholders.md](00-context/02-ecosystem-and-stakeholders.md#claims-carried-from-the-intake-unverified)
 and marked unverified. No decision in this specification depends on one being true. Do not repeat
 them as fact.
+
+**Confidence.** Not every statement here carries the same weight of evidence. Some claims were proven
+by running something; most are internally consistent and untested; a few are judgement calls marked
+**provisional**. Before treating any number or architectural claim as settled, check which category it
+falls into: [00-context/05-evidence-and-confidence.md](00-context/05-evidence-and-confidence.md).
 
 **One fact, one home.** Cross-reference with relative links instead of restating. If you find the
 same fact written in two documents, one of them is wrong; delete it and link.
