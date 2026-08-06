@@ -90,6 +90,7 @@ weakening them is the single worst change that can be made to this system.
 | FR-043 | Before `INTEGRATE` completes, the Project's full verification suite MUST run and pass in a Sandbox; a Task-level pass MUST NOT be sufficient. | `int` |
 | FR-044 | Every commit the system creates MUST carry trailers recording run id, task id, attempt number, verification command, model identifier and prompt version. | `unit`, `int` |
 | FR-045 | Any surface presenting a Run's outcome MUST state whether verification passed, failed, or did not run, using those words, and MUST NOT present an unverified result as successful. | `unit`, `int` |
+| FR-080 | When a Task declares a `touches` path scope, the patch policy validator MUST reject a patch modifying any path outside it, after symlink resolution. When a Task declares no scope, the workspace-wide policy in FR-036 applies unchanged. | `unit`, `escape` |
 
 ## Epic E — Models, cost and configuration
 

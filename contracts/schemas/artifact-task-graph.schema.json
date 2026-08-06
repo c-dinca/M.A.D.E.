@@ -47,7 +47,13 @@
           "type": "array",
           "maxItems": 20,
           "items": { "$ref": "common.schema.json#/$defs/WorkspacePath" },
-          "description": "A retrieval hint, not a constraint. The patch policy validator, not this list, decides what may be written."
+          "description": "A retrieval hint, not a constraint. Ranking uses it; nothing enforces it. Contrast with 'touches', which is enforced."
+        },
+        "touches": {
+          "type": "array",
+          "maxItems": 20,
+          "items": { "type": "string" },
+          "description": "Enforced path scope: glob patterns the patch for this Task may modify. When present, the patch policy validator rejects a write outside it after symlink resolution (FR-080), which bounds blast radius per Task rather than per Run. Absent means the workspace-wide policy applies unchanged. Declaring a scope the Task then needs to exceed is a plan defect and must escalate, not widen."
         },
         "depends_on": {
           "type": "array",

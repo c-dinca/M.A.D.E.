@@ -26,6 +26,7 @@ one decision, the alternative it beat, and the price paid.
 | [0016](0016-server-rendered-run-viewer.md) | Server-rendered run viewer; no single-page application in v1 | Accepted |
 | [0017](0017-content-addressed-artifact-store.md) | Artifacts are content-addressed in an object store, not blobs in Postgres | Accepted |
 | [0018](0018-spec-as-contract-and-spec-lint.md) | Contracts are normative and enforced by a spec-lint CI gate | Accepted |
+| [0019](0019-specification-first-projects.md) | Specification-first Projects: a generated specification bundle as a Run's first output | **Proposed — not in force** |
 
 ## Rules for writing one
 

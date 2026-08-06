@@ -73,7 +73,9 @@ Application code will live under `made/` per
 
 Eight decisions are genuinely unresolved and are marked in place rather than guessed at. Three of them
 gate real work: **OQ-03** (does v1 change an existing repository or generate a new project — the
-specification assumes the former, and the whole scope turns on it), **OQ-07** (whether the Architect
+specification assumes the former, and the whole scope turns on it; a candidate design for the latter
+is recorded as [ADR-0019](docs/03-adr/0019-specification-first-projects.md), `Proposed`), **OQ-07**
+(whether the Architect
 can generate valid verification commands or Projects must declare templates), and **OQ-08** (whether
 the isolation runtime works on the intended Proxmox host, which must be settled before any customer
 install). All eight, with what each blocks:

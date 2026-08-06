@@ -54,7 +54,10 @@ product, not helped it.
 > roadmap sequences those first.
 > **Resolved by:** the founder confirming which of the two the first design partner actually wants. If
 > greenfield, a mechanism must be designed by which a generated project inherits a meaningful oracle
-> before any implementation starts.
+> before any implementation starts. A candidate mechanism now exists and is recorded as
+> [ADR-0019](../03-adr/0019-specification-first-projects.md) — a specification phase gated on an
+> executable `spec-lint` — which changes this from an unanswered design question into a decision with
+> a measured trigger. It remains `Proposed`, and v1 still assumes the former.
 
 ## Personas
 

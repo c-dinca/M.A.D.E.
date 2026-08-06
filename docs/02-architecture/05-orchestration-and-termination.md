@@ -185,6 +185,13 @@ or modifying CI configuration, git hooks or submodule pointers
 sentence: without it, an agent can grant itself arbitrary execution on the customer's runners, which
 is the most direct privilege escalation available in this design.
 
+When a Task declares a `touches` scope in the plan, this guard also rejects any write outside it
+([FR-080](../01-product/03-functional-requirements.md)). That narrows blast radius from the workspace
+to the paths the plan actually claimed, which matters most in the case that is otherwise hardest to
+review: a Task that quietly edits something unrelated and still passes its own oracle. A Task that
+needs to exceed its declared scope is a planning defect and escalates; it does not widen its own
+scope, for the same reason an agent cannot raise its own attempt cap.
+
 ## Graph state
 
 The object LangGraph carries between nodes. It holds **references**, not content — the deliberate

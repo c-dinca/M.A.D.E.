@@ -100,10 +100,10 @@
     },
     {
       "id": "GUARD_PATCH_POLICY",
-      "description": "Rejects patches touching paths outside the workspace root after symlink resolution, exceeding the size cap, or modifying CI configuration, git hooks or submodule pointers.",
+      "description": "Rejects patches touching paths outside the workspace root after symlink resolution, exceeding the size cap, or modifying CI configuration, git hooks or submodule pointers. When the Task declares a 'touches' scope, also rejects any write outside that scope.",
       "evaluated_on": ["IMPLEMENT"],
       "on_refusal": "TASK_FAILED",
-      "requirements": ["FR-036"]
+      "requirements": ["FR-036", "FR-080"]
     }
   ],
 

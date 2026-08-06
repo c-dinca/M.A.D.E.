@@ -152,10 +152,11 @@ Roles map to directories and are defined in [`/AGENTS.md`](../../AGENTS.md).
 
 ### SPEC-01 — `spec-lint`
 **Role:** spec · **Blocked by:** PLAT-01 · **Blocks:** —
-**Reading:** [03-adr/0018-spec-as-contract-and-spec-lint.md](../03-adr/0018-spec-as-contract-and-spec-lint.md), [00-context/03-glossary.md](../00-context/03-glossary.md)
+**Reading:** [03-adr/0018-spec-as-contract-and-spec-lint.md](../03-adr/0018-spec-as-contract-and-spec-lint.md), [00-context/03-glossary.md](../00-context/03-glossary.md), [03-adr/0019-specification-first-projects.md](../03-adr/0019-specification-first-projects.md) (why the library interface)
 **Touches:** `tools/spec_lint/**`, `.github/workflows/spec-lint.yml`, `tests/unit/test_spec_lint.py`
 **Acceptance criteria**
 - All seven checks from [ADR-0018](../03-adr/0018-spec-as-contract-and-spec-lint.md) implemented, each with a failing fixture.
+- Implemented as a **library** with a machine-readable report (findings as structured records: file, line, rule, severity), with the command-line entry point a thin wrapper over it. Same cost today, and it is what later allows the tool to run as a `verification_command` inside a Sandbox ([ADR-0019](../03-adr/0019-specification-first-projects.md)).
 - Runs in under 10 seconds on the whole repository.
 - Exits non-zero with a message naming the file, the line and the rule.
 
@@ -270,10 +271,11 @@ Roles map to directories and are defined in [`/AGENTS.md`](../../AGENTS.md).
 
 ### TOOL-04 — Patch policy validator
 **Role:** sandbox · **Blocked by:** TOOL-03 · **Blocks:** ORCH-05
-**Reading:** [02-architecture/05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md) (GUARD_PATCH_POLICY), [02-architecture/13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md)
+**Reading:** [02-architecture/05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md) (GUARD_PATCH_POLICY), [02-architecture/13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md), [`/contracts/schemas/artifact-task-graph.schema.json`](../../contracts/schemas/artifact-task-graph.schema.json)
 **Touches:** `made/tools/patch_policy.py`, `tests/unit/test_patch_policy.py`, `tests/escape/test_patch_policy_escape.py`
 **Acceptance criteria**
 - Rejects paths outside the workspace after symlink resolution, oversized patches, and any write to CI configuration, git hooks or submodule pointers (FR-036).
+- When the Task declares a `touches` scope, rejects any write outside it after symlink resolution; when absent, the workspace-wide policy applies unchanged (FR-080).
 - Rejection is a typed policy violation that routes the Run to escalation rather than a retry. 100% branch coverage.
 
 ### TOOL-05 — Toolbelt factory with per-State authority
@@ -560,7 +562,7 @@ encounters one MUST NOT invent an answer: stop and report per [`/AGENTS.md`](../
 | --- | --- | --- | --- |
 | **OQ-01** | Is the first paying deployment self-hosted by the customer or hosted by us? ([00-context/02](../00-context/02-ecosystem-and-stakeholders.md)) | Billing surface, tenancy columns, whether Seam 2 is a v1 concern. Blocks no current item; the specification assumes self-hosted ([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)) | Founder naming the deployment shape of the first design-partner install |
 | **OQ-02** | What compliance, retention and data-residency obligations do the first customers have? ([02-architecture/09](../02-architecture/09-audit-and-replay.md), [02-architecture/13](../02-architecture/13-security-and-compliance.md)) | The default retention value and any compliance claim in customer material. Blocks no implementation item | Founder confirming the first design partner's requirements |
-| **OQ-03** | Does v1 change an existing repository, or generate a new project from a description? ([01-product/01](../01-product/01-scope-and-personas.md)) | The persona set, Project registration, the Architect prompt, Seam 4. Would invalidate AGENT-02 and parts of ORCH-06 if answered "greenfield" | Founder confirming what the first design partner wants; if greenfield, an oracle mechanism must be designed first |
+| **OQ-03** | Does v1 change an existing repository, or generate a new project from a description? ([01-product/01](../01-product/01-scope-and-personas.md)) | The persona set, Project registration, the Architect prompt, Seam 4. Would invalidate AGENT-02 and parts of ORCH-06 if answered "greenfield" | Founder confirming what the first design partner wants. The oracle mechanism that used to be missing now has a candidate design in [ADR-0019](../03-adr/0019-specification-first-projects.md) (`Proposed`), so this is now a product decision rather than an open technical one |
 | **OQ-04** | Infrastructure budget ceiling, and does GPU hardware for local inference already exist? ([00-context/04](../00-context/04-business-model.md), [02-architecture/11](../02-architecture/11-infrastructure-and-devops.md)) | Default tier configuration and how often the evaluation harness can run. Soft-blocks EVAL-03's baseline economics | Founder stating available VRAM and monthly infrastructure ceiling |
 | **OQ-05** | Which model and endpoint serves each capability tier, at what price? ([00-context/02](../00-context/02-ecosystem-and-stakeholders.md), [02-architecture/10](../02-architecture/10-llm-integration-and-evaluation.md)) | The shipped example configuration and any published cost-per-run figure. Does not block implementation — tiers are configuration | Running EVAL-01 against two candidates per tier and recording measured pass rate and cost |
 | **OQ-06** | Pricing structure and price point ([00-context/04](../00-context/04-business-model.md)) | Any billing surface and any unit-economics claim. Blocks no v1 item, deliberately | Two design-partner conversations establishing the budget line and the comparison |
