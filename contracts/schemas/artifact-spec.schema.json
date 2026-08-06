@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-spec.schema.json",
+  "title": "Spec artifact",
+  "description": "Produced by the Architect in SPEC. States what the change must achieve and, critically, what it must not touch. Ambiguity is declared rather than resolved: an Architect that guesses produces a plan that verifies the wrong thing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "goal", "acceptance_criteria", "affected_surfaces", "non_goals", "open_questions", "ambiguity_score"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "What the change must achieve, in the requester's terms."
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "statement", "observable"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^AC-[0-9]{2}$" },
+          "statement": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "observable": {
+            "type": "string",
+            "minLength": 1,
+            "description": "How this criterion could be observed by executing something. A criterion with no observable form cannot become a Task with an oracle."
+          }
+        }
+      }
+    },
+    "affected_surfaces": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "$ref": "common.schema.json#/$defs/WorkspacePath" },
+      "description": "Paths expected to change. A hint for retrieval ranking, not a constraint on the patch."
+    },
+    "non_goals": {
+      "type": "array",
+      "maxItems": 20,
+      "items": { "type": "string", "maxLength": 300 },
+      "description": "What this change explicitly does not do. Prevents scope creep across Tasks."
+    },
+    "open_questions": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question", "blocks"],
+        "properties": {
+          "question": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "blocks": { "type": "string", "maxLength": 300 }
+        }
+      },
+      "description": "Decisions the Architect could not infer. A non-empty list with ambiguity_score above the Project threshold routes the Run to AWAIT_HUMAN rather than guessing (FR-029)."
+    },
+    "ambiguity_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "The Architect's assessment of unresolved ambiguity. Compared against the Project threshold by the orchestrator; the Architect does not decide the routing."
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/run-event.schema.json",
+  "title": "Run event",
+  "description": "One line of the append-only log and one line of the audit export (FR-065). This is the audit source of truth; framework checkpoints have no audit standing (ADR-0004). Evolution is additive only: new kinds may be added and existing kinds may gain optional payload fields, but removing a field or changing a kind's meaning breaks historical folds and requires a version bump.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "seq", "occurred_at", "kind", "state", "cost_usd"],
+  "properties": {
+    "run_id": { "$ref": "common.schema.json#/$defs/Uuid" },
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Dense and gapless per Run. The ordering authority; timestamps are not, because clocks skew."
+    },
+    "occurred_at": { "$ref": "common.schema.json#/$defs/Timestamp" },
+    "kind": {
+      "enum": [
+        "run_created", "state_entered", "artifact_produced", "patch_applied", "patch_rejected",
+        "exec_started", "exec_completed", "llm_call", "verification_completed", "review_completed",
+        "guard_tripped", "budget_denied", "egress_decision", "sandbox_created", "sandbox_destroyed",
+        "human_signal", "recovery_performed", "run_finished"
+      ]
+    },
+    "state": { "$ref": "common.schema.json#/$defs/State" },
+    "task_id": { "oneOf": [{ "$ref": "common.schema.json#/$defs/Uuid" }, { "type": "null" }] },
+    "attempt_no": { "type": ["integer", "null"], "minimum": 1 },
+    "artifact_sha": { "oneOf": [{ "$ref": "common.schema.json#/$defs/Sha256" }, { "type": "null" }] },
+    "cost_usd": {
+      "$ref": "common.schema.json#/$defs/UsdAmount",
+      "description": "Cost incurred by this event. Present so that folding reproduces spend without a join; aggregate reporting uses the ledger instead, which is indexed for it."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Small and structured. Large material — logs, patches, prompts — lives in the object store and is referenced by digest. The shape is per kind; representative fields are documented below rather than constrained here, so that additive evolution does not require a schema change per kind.",
+      "properties": {
+        "from_state": { "$ref": "common.schema.json#/$defs/State" },
+        "to_state": { "$ref": "common.schema.json#/$defs/State" },
+        "guard": { "type": "string", "pattern": "^GUARD_[A-Z_]+$" },
+        "guard_inputs": { "type": "object" },
+        "argv": { "$ref": "common.schema.json#/$defs/Argv" },
+        "exit_code": { "type": ["integer", "null"] },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "tier": { "$ref": "common.schema.json#/$defs/Tier" },
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "prompt_version": { "type": "string" },
+        "tokens_in": { "type": "integer", "minimum": 0 },
+        "tokens_cached": { "type": "integer", "minimum": 0 },
+        "tokens_out": { "type": "integer", "minimum": 0 },
+        "usage_estimated": { "type": "boolean" },
+        "used_fallback": { "type": "boolean" },
+        "destination": { "type": "string" },
+        "allowed": { "type": "boolean" },
+        "reason": { "type": "string" },
+        "actor": { "type": "string" },
+        "decision": { "enum": ["approve", "revise", "amend_plan", "cancel"] },
+        "shown_artifacts": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/Sha256" },
+          "description": "What the human was shown when approving. An approval of something nobody saw is not an approval."
+        },
+        "image_digest": { "type": "string" },
+        "outcome": { "type": "string" },
+        "terminal_reason": { "type": ["string", "null"] },
+        "spent_usd": { "$ref": "common.schema.json#/$defs/UsdAmount" }
+      }
+    }
+  }
+}

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.hypothesis/
+
+# Secrets and local configuration.
+# A committed secret is a rotation event, not a cleanup task.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Local data. Artifacts and database volumes never belong in git;
+# artifacts are content-addressed in the object store (ADR-0017).
+data/
+*.sqlite
+*.db
+*.dump
+
+# Sandbox and workspace scratch. Workspaces are ephemeral by design
+# (docs/02-architecture/04-execution-isolation.md).
+workspaces/
+.sandbox/
+mirrors/
+
+# Evaluation and benchmark OUTPUT. Note the exceptions below:
+# eval/baseline.json and bench/*.json ARE committed, because a baseline
+# that is not versioned cannot be compared against (NFR-027).
+eval/results/
+eval/*.tmp.json
+bench/*.tmp.json
+
+# Editor and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Generated documentation output
+site/
+docs/_build/

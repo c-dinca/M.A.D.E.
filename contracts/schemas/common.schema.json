@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/common.schema.json",
+  "title": "Shared primitives",
+  "description": "Formats used across artifact and event schemas. Money is a decimal string, never a JSON number: a ledger compared against a hard ceiling cannot be carried in a type that loses cents.",
+  "$defs": {
+    "Uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "Sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "UsdAmount": {
+      "type": "string",
+      "pattern": "^-?[0-9]+\\.[0-9]{1,6}$",
+      "description": "Decimal string. Negative values are invalid for costs but the pattern permits them so that a delta can reuse this type."
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "SchemaVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "Major.minor. A consumer reading an unknown major version MUST fail loudly rather than proceed."
+    },
+    "WorkspacePath": {
+      "type": "string",
+      "pattern": "^[^/\\\\][^\\\\]*$",
+      "description": "Workspace-relative POSIX path. Absolute paths and backslashes are rejected; traversal is rejected by the host-side validator after symlink resolution."
+    },
+    "Argv": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "An argument vector. Never a shell string: a string interface invites interpolation."
+    },
+    "TaskKind": {
+      "enum": ["code", "test", "iac", "docs"]
+    },
+    "State": {
+      "enum": [
+        "INTAKE", "SPEC", "PLAN", "TASK_SELECT", "IMPLEMENT", "VERIFY", "REVIEW",
+        "TASK_DONE", "TASK_FAILED", "INTEGRATE", "AWAIT_HUMAN", "DONE", "REJECTED", "ABORTED"
+      ],
+      "description": "MUST equal the state list in contracts/state-machine.json and the CHECK constraint in contracts/db/0001_init.sql."
+    },
+    "Tier": {
+      "enum": ["PLAN", "EDIT", "NAV", "CRITIC"]
+    },
+    "VerificationOutcome": {
+      "enum": ["verified", "failed_verification", "not_verified"],
+      "description": "The only three outcomes. 'not_verified' means the command did not run to completion and MUST NOT be rendered as either success or failure."
+    }
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-test-report.schema.json",
+  "title": "TestReport artifact",
+  "description": "Produced by the VERIFY state. No model is involved in its creation. The exit code is the sole determinant of Task success (ADR-0014); the normalised output exists so that the progress oracle and the prompt reducer see the same thing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "command", "outcome", "duration_ms"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "command": { "$ref": "common.schema.json#/$defs/Argv" },
+    "outcome": { "$ref": "common.schema.json#/$defs/VerificationOutcome" },
+    "exit_code": {
+      "type": ["integer", "null"],
+      "description": "Null only when outcome is not_verified: the command did not run to completion. Null MUST NOT be rendered as zero."
+    },
+    "timed_out": { "type": "boolean", "default": false },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "failing_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Parsed count of failing checks, or 1 when the output cannot be parsed. The fallback is conservative on purpose: an unparseable output can never show a reduction, so the progress oracle falls back to comparing signatures alone and stops earlier rather than later."
+    },
+    "failure_signature": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "sha256 over normalised output concatenated with the exit code. Null when outcome is verified."
+    },
+    "normalised_output": {
+      "type": "string",
+      "maxLength": 20000,
+      "description": "Truncated to the configured number of failures, with absolute paths, timestamps, durations, addresses, temporary names, pids and random ids removed."
+    },
+    "raw_output_sha256": {
+      "$ref": "common.schema.json#/$defs/Sha256",
+      "description": "The untruncated log, stored as an artifact and referenced rather than inlined."
+    },
+    "pre_change_run": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["exit_code"],
+      "properties": {
+        "exit_code": { "type": "integer" }
+      },
+      "description": "Present for Tasks of kind 'test'. The command must have failed against the pre-change tree, otherwise the test verifies nothing."
+    }
+  }
+}

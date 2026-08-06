@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://made.dev/contracts/schemas/artifact-review-report.schema.json",
+  "title": "ReviewReport artifact",
+  "description": "Produced by the Reviewer in REVIEW. ADVISORY. The verdict enumeration deliberately has no 'success' member: a Task becomes successful only through a zero verification exit code (ADR-0014). The Reviewer exists to catch what an exit code cannot — a change that passes its test while doing something undesirable — and its findings go to the human reviewer, where a judgement call belongs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "verdict", "findings"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "verdict": {
+      "enum": ["approve", "revise", "escalate"],
+      "description": "'approve' means the Reviewer has no blocking objection; it does not mean the Task succeeded. Routing still requires a passing verification."
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 30,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "path", "message"],
+        "properties": {
+          "severity": { "enum": ["info", "minor", "major"] },
+          "path": { "$ref": "common.schema.json#/$defs/WorkspacePath" },
+          "line": { "type": "integer", "minimum": 1 },
+          "message": { "type": "string", "minLength": 1, "maxLength": 1000 }
+        }
+      }
+    },
+    "summary": { "type": "string", "maxLength": 2000 }
+  }
+}
