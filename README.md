@@ -1,9 +1,14 @@
 # M.A.D.E.
 
-**M**ulti-**A**gent **D**evelopment **E**ngine — a self-hosted system in which specialised LLM agents
-(Architect, Developer, QA, DevOps, Reviewer) collaborate under a deterministic state machine to change
-an existing repository, execute the change in an isolated Sandbox, and prove it with a command that
-exits zero before a human is asked to approve it.
+**M**ulti-**A**gent **D**evelopment **E**ngine — a self-hosted system that removes maintenance and
+technical-debt work from an engineering team. It runs unattended against existing repositories,
+carries out jobs in declared **work classes** — dependency upgrades that also fix what the upgrade
+breaks, lint and type debt, mechanical API migrations — proves each one with the repository's **own**
+test suite inside an isolated Sandbox, and opens a pull request for a human to merge.
+
+The product boundary, its rejected alternatives and its costs are in
+[ADR-0020](docs/03-adr/0020-technical-debt-remediation-as-the-v1-product.md). What it deliberately does
+**not** do: build new projects, or implement features from tickets.
 
 **Status: specification only. No application code exists yet.** This repository currently contains the
 architecture and product specification, the normative contracts, and the work queue. Implementation
@@ -11,15 +16,21 @@ starts at [`PLAT-01`](docs/05-delivery/02-backlog.md).
 
 ## The problem it addresses
 
-Autonomous coding agents are opaque, meter their own compute so a reasoning error becomes a bill, and
-push a wrong solution forward instead of stopping. Browser prototyping tools produce an application
-with no path into a production estate. Open-source agent frameworks solve orchestration and leave
-execution running in a shared-kernel container. The organisations most able to pay are the ones least
-able to adopt any of them, because their security function cannot answer three questions: what did the
-agent execute, where could our source have gone, and what stops a run consuming an unbounded budget.
+Engineering teams lose a large share of their capacity to maintenance: dependency upgrades, chores,
+repetitive review, mechanical migrations. The work is contractually required, low-margin, hard to staff
+and universally disliked, and scaling it by hiring stopped being sustainable.
 
-M.A.D.E. answers those three structurally rather than by assurance. See
-[problem and vision](docs/00-context/01-problem-and-vision.md).
+The existing tools split the problem and leave the expensive half. Dependabot and Renovate open the
+pull request and, when the upgrade breaks the build, leave a red one for a senior engineer to fix.
+Claude Code and Cursor can do that fix well — but they are interactive by design, assuming a human at a
+keyboard approving steps and noticing when a run goes wrong. Nobody watches a package bump across two
+hundred repositories.
+
+**M.A.D.E. starts where the free tools stop, and runs where the interactive tools cannot**: unattended,
+on a schedule, on the customer's own infrastructure, with a budget ceiling enforced before each model
+call and a complete audit trail of everything executed. See
+[problem and vision](docs/00-context/01-problem-and-vision.md) and
+[work classes](docs/01-product/05-work-classes.md).
 
 ## Architecture at a glance
 
@@ -72,12 +83,17 @@ Application code will live under `made/` per
 
 ## Open questions
 
-Eight decisions are genuinely unresolved and are marked in place rather than guessed at. Three of them
-gate real work: **OQ-03** (does v1 change an existing repository or generate a new project — the
-specification assumes the former, and the whole scope turns on it; a candidate design for the latter
-is recorded as [ADR-0019](docs/03-adr/0019-specification-first-projects.md), `Proposed`), **OQ-07**
-(whether the Architect
-can generate valid verification commands or Projects must declare templates), and **OQ-08** (whether
-the isolation runtime works on the intended Proxmox host, which must be settled before any customer
-install). All eight, with what each blocks:
+Decisions that are genuinely unresolved are marked in place rather than guessed at. Two now gate real
+work:
+
+**OQ-09** — how a dependency upgrade obtains the new package version, given that Sandboxes have no
+network. This blocks the first sellable work class and is the most important open question in the
+specification. It must not be solved by giving the Sandbox network access.
+
+**OQ-08** — whether the isolation runtime works on the intended Proxmox host. Must be settled before any
+customer install, because otherwise the isolation claim is untested on the platform that matters.
+
+**OQ-03 is resolved**: existing repositories, maintenance work, in declared work classes
+([ADR-0020](docs/03-adr/0020-technical-debt-remediation-as-the-v1-product.md)). OQ-07 is deferred with
+the Architect. All of them, with what each blocks:
 [open questions](docs/05-delivery/02-backlog.md#open-questions).

@@ -70,40 +70,35 @@ difficulty of every other failure and directly threatens
 [UF-3](01-system-overview.md#the-five-unforgivable-failures) and
 [UF-5](01-system-overview.md#the-five-unforgivable-failures).
 
-## Seam 4 — Greenfield projects, via a specification phase
+## Seam 4 — Generated planning, and beyond it greenfield
 
-This is the seam most likely to be built prematurely, because it is the framing the intake's "a-z
-software creator" language implies. v1 deliberately excludes it
-([01-product/01-scope-and-personas.md](../01-product/01-scope-and-personas.md)).
+**Closed for now, and the reason matters.** OQ-03 is resolved: the product is maintenance work on
+existing repositories, and the unit of work is a work class with a fixed task template
+([ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md),
+[01-product/05-work-classes.md](../01-product/05-work-classes.md)). Greenfield generation is out of
+scope and [ADR-0019](../03-adr/0019-specification-first-projects.md) is withdrawn.
 
-The blocker was never the scaffolding; it was that a new repository has no oracle, and a scaffold
-passing its own generated tests proves nothing. **That blocker now has a candidate answer**, recorded
-as [ADR-0019](../03-adr/0019-specification-first-projects.md): begin the Project with a
-*specification phase* whose output is a bundle of normative contracts, documents and a backlog, gated
-on `spec-lint` — which is executable, and therefore an exit code. Contract-first ordering then gives
-the implementation phase a real oracle ladder on an empty repository.
+This seam therefore now covers the nearer thing that was deferred with it: **generated planning**. The
+Architect, `SPEC`, `PLAN`, `GUARD_PLAN_VALID` and the TaskGraph contract are all fully specified, and
+none of them is on the critical path to the first sellable capability, because a work class supplies
+the plan.
 
-Read that ADR before touching anything here. It is `Proposed`, not accepted: it is a design with a
-measured trigger, not a licence to start.
+**Build now:** nothing new. Everything the seam needs already exists as specification, and the two
+items that were justified by ADR-0019 are retained because they pay for themselves in the maintenance
+product — `spec-lint` as a library with a machine-readable report (`SPEC-01`), and the enforced
+`touches` scope per Task ([FR-080](../01-product/03-functional-requirements.md)), which is *more*
+useful here than it would have been there, since a dependency upgrade's affected paths are predictable.
 
-**Build now**, because each of these pays for itself in v1 independently of the seam:
+**Do not build:** the Architect, `SPEC`/`PLAN` model calls, plan approval flow, a Project `mode`, a
+specification phase, scaffolding, or templates. Note in particular that no `mode` column or API field
+exists, deliberately — a field with one legal value implies a capability that is not there, the same
+trap as the tenant column in Seam 2.
 
-- `spec-lint` as a **library with a machine-readable report**, not a CI script (`SPEC-01`). Same cost
-  today; it is what later allows the tool to run as a `verification_command` inside a Sandbox.
-- Optional **`touches`** on a Task in the TaskGraph contract, enforced by the patch policy validator
-  ([FR-080](../01-product/03-functional-requirements.md)). This bounds a patch's blast radius to the
-  paths the plan declared, which strengthens
-  [UF-3](01-system-overview.md#the-five-unforgivable-failures) now, and is the mechanism the
-  bundle's collision-avoidance rules would later depend on.
-
-**Do not build:** a Project `mode`, a specification phase, a scaffolding agent, project templates, a
-"create from description" endpoint, or mode-aware budgets. Note in particular that no `mode` column or
-API field exists, deliberately — a field with one legal value implies a capability that is not there,
-which is the same trap as the tenant column in Seam 2.
-
-**Trigger:** all three conditions in [ADR-0019](../03-adr/0019-specification-first-projects.md#revisit-when),
-of which the binding one is a design partner who wants new projects built rather than existing ones
-changed (OQ-03).
+**Trigger, in order.** Generated planning becomes worth building when work classes cover the demand and
+customers ask for jobs that no template fits — evidenced by requests declined for lack of a class, not
+by ambition. Greenfield reopens only if a design partner asks for new projects *and* brings the oracle
+question with them, at which point [ADR-0019](../03-adr/0019-specification-first-projects.md) is the
+design to revive rather than reinvent.
 
 **Trigger:** OQ-03 resolved in favour of greenfield *and* a template-with-harness mechanism designed.
 
@@ -151,7 +146,7 @@ absence of it is the reason for the prohibition, not squeamishness about the ide
 | 1 Hardware isolation | Six-operation provider interface, configurable | microVM lifecycle, snapshots | Customer requirement or escape finding |
 | 2 Multi-tenancy | Project scoping, roles, prefixed artifacts | Tenant table or column, RLS | Second hosted customer |
 | 3 Parallel Tasks | DAG with dependencies, documented reducers | Fan-out, dynamic dispatch | Duration dominated by sequencing, at a high pass rate |
-| 4 Greenfield | `spec-lint` as a library; `touches` on a Task | Project `mode`, specification phase, templates, scaffolding agent | [ADR-0019](../03-adr/0019-specification-first-projects.md) trigger; binding condition is OQ-03 |
+| 4 Generated planning, then greenfield | Nothing new; `spec-lint` library and `touches` already retained | The Architect, `SPEC`/`PLAN` calls, plan approval, Project `mode`, specification phase, scaffolding | Demand no work class fits, evidenced by declined requests ([ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md)) |
 | 5 Image building | `iac` static validators | Build service, registry push | Customer requirement plus Seam 1 |
 | 6 Notification egress | Pull-based log and export | Webhooks, SIEM push | Customer purchase condition |
 | 7 Cross-Run learning | Attempt records, eval corpus | Semantic memory, prompt evolution | A logged-artifact design |

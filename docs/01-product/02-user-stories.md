@@ -5,11 +5,27 @@ Stories describe what a person gets. The numbered requirements in
 story without at least one requirement behind it is a wish; a requirement with no story is either
 infrastructure or scope creep, and should be challenged.
 
-Personas P1 (platform operator), P2 (lead developer) and P3 (security reviewer) are defined in
-[01-scope-and-personas.md](01-scope-and-personas.md#personas).
+Personas P1 (platform operator), P2 (lead developer), P4 (delivery manager) and P3 (security reviewer)
+are defined in [01-scope-and-personas.md](01-scope-and-personas.md#personas).
 
 Priority: **P0** blocks the proof of concept; **P1** blocks a design-partner install; **P2** is
 wanted before the second customer.
+
+> **Re-prioritised by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md).** The
+> product is maintenance work in declared work classes, so the stories about submitting a free-text
+> change request and approving a generated plan — **US-004, US-005, US-006 and US-008** — move to the
+> deferred M4 milestone along with the Architect. They are retained rather than withdrawn because they
+> are still the correct stories for generated planning when it is built. The stories that carry the v1
+> product are the honest-failure and audit epics (US-010 to US-017) plus a new one below, because a
+> Run's trigger is now a schedule and a work class rather than a person and a sentence.
+>
+> **US-023 — Have maintenance done while nobody watches** · P4, P2 · P0 · FR-081, FR-082, FR-083
+> As a delivery manager, I want dependency upgrades attempted across my repositories on a schedule,
+> with a cost ceiling I set, and pull requests I can merge.
+> *Given* a Project with the `dependency_upgrade` class enabled and a weekly schedule, *when* the
+> window arrives, *then* Runs are created without a person, each reaches `IMPLEMENT` with no planning
+> model call, each is bounded by the concurrency cap and the budget ceilings, *and* the ones that
+> succeed produce pull requests whose diff a reviewer merges without editing it.
 
 ## Epic 1 — Get it running
 

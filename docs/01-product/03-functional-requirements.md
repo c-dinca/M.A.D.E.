@@ -142,6 +142,20 @@ weakening them is the single worst change that can be made to this system.
 | FR-074 | Attempt history MUST be passed to agents as compacted `AttemptRecord` artifacts, not as raw transcripts. | `unit` |
 | FR-075 | All tool results MUST be presented to a model as delimited untrusted data with provenance, and MUST NOT be able to alter the agent's tool authority or the Task's verification command. | `unit`, `eval` |
 
+## Epic J — Work classes
+
+The unit maintenance work arrives in ([05-work-classes.md](05-work-classes.md)). These requirements are
+what make the first product shippable without generated planning
+([ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md)).
+
+| ID | Requirement | Verified by |
+| --- | --- | --- |
+| FR-081 | A Project MUST be able to enable named work classes, each supplying a fixed task template; a Run created from a work class MUST reach `IMPLEMENT` without any model call in `SPEC` or `PLAN`. | `unit`, `int` |
+| FR-082 | The system MUST support creating Runs on a schedule per Project and work class, and scheduled Runs MUST be subject to the same concurrency cap, budget ceilings and attempt caps as human-submitted Runs. | `int` |
+| FR-083 | A `dependency_upgrade` Run MUST record the manifest change and the resolved versions, and MUST reject a patch that modifies a dependency manifest without a consistent lockfile update. | `unit`, `int` |
+| FR-084 | A review-only work class MUST run with a read-only toolbelt, MUST NOT produce a `Patch`, and MUST NOT be reported as verified. | `unit`, `int` |
+| FR-085 | Enabling a work class on a Project MUST execute that class's declared oracle against the base branch and MUST refuse if it cannot be executed, reporting the command and its output. | `int` |
+
 ## Epic I — Evaluation
 
 | ID | Requirement | Verified by |
