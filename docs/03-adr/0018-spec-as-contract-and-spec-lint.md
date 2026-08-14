@@ -35,7 +35,10 @@ It asserts:
 5. No banned synonym from [00-context/03-glossary.md](../00-context/03-glossary.md#banned-synonyms)
    appears in an identifier, an API field name or a database column.
 6. Every `OQ-##` marked inline appears in the open-questions table in
-   [05-delivery/02-backlog.md](../05-delivery/02-backlog.md#open-questions), and vice versa.
+   [05-delivery/02-backlog.md](../05-delivery/02-backlog.md#open-questions), and every **unresolved** row
+   in that table is marked inline somewhere. Rows struck through as resolved are exempt from the second
+   direction: they are retained as a record, and their inline block is removed by the decision that
+   closed them.
 7. Every backlog item declares Reading, Touches, Role, acceptance criteria and dependencies.
 
 A specification change that breaks any of these fails the build in the same way a broken test does.

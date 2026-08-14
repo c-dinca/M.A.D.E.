@@ -3,6 +3,18 @@
 Milestones are defined by capability and gated by exit criteria, not by dates. The sequence is a
 dependency argument: each milestone removes the risk that would invalidate the next one's work.
 
+> **Resequenced by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md).** The
+> product is maintenance work on existing repositories, so the plan comes from a work class rather than
+> from the Architect ([01-product/05-work-classes.md](../01-product/05-work-classes.md)). The
+> consequence is large and worth stating before the milestones: **M4 is no longer on the critical path
+> to the first sellable capability.** The multi-agent orchestration, the Architect, `SPEC`, `PLAN` and
+> plan approval move behind first revenue. What replaces M4 in the critical path is a smaller
+> milestone — M3b, the first work class — because a fixed task template plus the repository's own test
+> suite is a complete product, and generated planning is not needed to sell it.
+>
+> Everything in M0 through M3 is unchanged. It was strategy-independent, which is why it was sequenced
+> first.
+
 ## Sequencing rationale
 
 **Isolation before agents (M1 before M3).** The isolation boundary is the highest-risk unknown and the
@@ -101,21 +113,47 @@ cache-ordered prompt assembler; the Developer agent; the run viewer; per-Run cos
 - Every model call has an event and a ledger row; the reconciliation query returns zero orphans.
 - Cached-token ratio measured and reported.
 
-## M4 — Multi-agent and delivery
+## M3b — The first work class, and delivery
 
-*Capability: prose in, pull request out, with approval gates.*
+*Capability: a scheduled `dependency_upgrade` produces a merged pull request with no human edit. This
+is the first sellable capability and it replaces M4 on the critical path.*
 
-The Architect producing Spec and TaskGraph with mandatory oracles; QA, DevOps and Reviewer roles;
-`TASK_SELECT` topological execution; `INTEGRATE` with the full suite; durable `AWAIT_HUMAN` with
-recorded approvals; git delivery through the control plane; commit trailers.
+Work-class registry with fixed task templates; the `dependency_upgrade` class including the manifest and
+lockfile consistency rule; the scheduler inside the existing worker; durable `AWAIT_HUMAN` with recorded
+approvals; git delivery through the control plane; commit trailers. No Architect, no `SPEC`, no `PLAN`,
+no plan approval.
+
+**Exit criteria**
+
+- A scheduled Run bumps a dependency, fixes what the bump breaks, and passes the repository's own suite
+  in a Sandbox.
+- A patch modifying a manifest without a consistent lockfile update is rejected
+  ([FR-083](../01-product/03-functional-requirements.md)).
+- No push to a default branch is possible, and no push occurs without a recorded approval.
+- A Run created from a work class reaches `IMPLEMENT` with zero model calls in `SPEC` or `PLAN`
+  ([FR-081](../01-product/03-functional-requirements.md)).
+- Scheduled Runs respect the concurrency cap and every budget ceiling — the case those guards exist for
+  ([FR-082](../01-product/03-functional-requirements.md)).
+- **The metric exists and is reported: share of pull requests merged with no human edit.** This is the
+  number the economic buyer buys, and OQ-09 must be resolved for any of it to run.
+
+## M4 — Multi-agent and generated planning (deferred behind first revenue)
+
+*No longer on the critical path. Retained as specification; build only when work classes stop covering
+demand ([15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md), Seam 4).*
+
+*Capability: a free-text request that no work class covers produces a plan and then a pull request.*
+
+The Architect producing Spec and TaskGraph with mandatory oracles; the DevOps and Reviewer roles;
+`TASK_SELECT` topological execution; `INTEGRATE` with the full suite; plan approval.
 
 **Exit criteria**
 
 - A prose request produces a branch and a pull request with no hand-written Task, after two approvals.
 - A plan containing a Task without a verification command is rejected before implementation.
-- No push to a default branch is possible, including when explicitly requested.
-- A Run parked in `AWAIT_HUMAN` holds no Sandbox and resumes correctly after an hour.
 - A two-Task request with a dependency between the Tasks succeeds.
+- OQ-07 resolved by measurement, since generated verification commands are the whole risk of this
+  milestone.
 
 ## M5 — Evaluation, hardening and first install
 
@@ -136,7 +174,9 @@ restore drill; the bootstrap timing job; the operator runbook.
   sampled Run.
 - Bootstrap on a clean VM completes within
   [NFR-020](../01-product/04-non-functional-requirements.md).
-- Trivial-tier pass rate measured and recorded — the number that decides whether M6 happens at all.
+- **Merge-rate without human edit measured on the `dependency_upgrade` class** — the number that decides
+  whether M6 happens at all, and the one the economic buyer is actually buying. It replaces trivial-tier
+  pass rate as the gating measurement, because it is the same question asked in the buyer's terms.
 
 ## M6 — Design-partner install
 
@@ -158,10 +198,12 @@ customer to supervise rather than to delegate.
 
 Decided now, while it is still cheap to be honest.
 
-**Pass rate.** If trivial-tier pass rate at M5 is below 70% without human intervention, the product is
-an expensive suggestion engine. The pivot is to narrow to a task class with a strong oracle —
-dependency upgrades, test generation for existing code, or IaC artifact production — where the diff is
-small and the verification is unambiguous. Narrow, do not broaden.
+**Merge rate.** If fewer than 70% of `dependency_upgrade` pull requests merge without a human editing
+the diff, the product is a suggestion engine with extra steps. Note that
+[ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md) has already taken the pivot
+this criterion used to prescribe — narrowing to a task class with a strong oracle — so the next
+narrowing is *within* the class: patch and minor upgrades only, no breaking changes. Narrow, do not
+broaden.
 
 **Unit economics.** If cost per successful outcome exceeds roughly a quarter of what the buyer would
 plausibly pay, there is no room for support or for a model price rise. Attack context and caching

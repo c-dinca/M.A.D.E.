@@ -9,16 +9,34 @@ here are normative: the instrumentation in
 
 ## Who pays, and for what
 
-The buyer is an engineering organisation that already has production systems and a security review
-process. The purchase is authorised by an engineering leader, but it is **vetoed by security**, which
-means the security posture is not a feature that increases willingness to pay — it is the condition
-of the sale happening at all. That asymmetry is why the roadmap sequences the isolation boundary
-before the multi-agent capability ([05-delivery/01-roadmap.md](../05-delivery/01-roadmap.md)).
+Sharpened by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md): the buyer is
+an engineering organisation carrying a maintenance burden it cannot staff economically, and the clearest
+version of that buyer is a software services or outsourcing organisation — the intake names the
+Bucharest and Cluj hubs.
 
-The daily user is a developer or lead who submits requests and reviews the resulting branches. They
-are not the budget holder. The consequence for the product is that per-run cost must be legible to
-someone who is not watching it: the ceiling is declared up front and the ledger is per run, not a
-monthly aggregate that arrives as a surprise.
+Their economics are people-hours, and maintenance work sits in the worst quadrant of those economics:
+contractually required, low-margin because a client will not pay senior rates for a package bump, hard
+to staff because nobody wants the work, and multiplied across every client repository they hold. That
+is a budget line with a number attached and an owner who feels it monthly — persona P4 in
+[01-product/01-scope-and-personas.md](../01-product/01-scope-and-personas.md).
+
+Two consequences that change the shape of the sale relative to the original framing:
+
+**Security stops being a veto and becomes a contract clause.** An outsourcing organisation cannot send
+a client's source to a third party because the client agreement forbids it. That is a yes-or-no
+condition satisfied by construction by the self-hosted deployment
+([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)), not an argument to be won with a CISO. It
+is a materially easier conversation, and it is why the roadmap still sequences the isolation boundary
+first — but now for a commercial reason rather than a defensive one.
+
+**The value is denominated in a number the buyer already tracks:** the share of maintenance pull
+requests merged without a human editing the diff. That metric is the product's headline claim and its
+kill criterion ([05-delivery/01-roadmap.md](../05-delivery/01-roadmap.md)), which is why it gates M6
+rather than a synthetic pass rate.
+
+The daily user is the lead developer who reviews and merges. They are not the budget holder. So
+per-Run cost must be legible to someone who is not watching: the ceiling is declared up front and the
+ledger is per Run, never a monthly aggregate that arrives as a surprise.
 
 ## Pricing shape
 
@@ -35,6 +53,14 @@ A **per-accepted-outcome fee** — charging when a run produces a branch a human
 price with delivered value and is the honest inverse of usage-metered billing, since a failed run
 costs the customer nothing. Its weakness is that it requires us to observe the customer's approvals,
 which is in tension with the air-gapped promise, and it exposes us to their acceptance standards.
+
+[ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md) narrows this in one respect
+worth recording: because the work is recurring and each job is individually small, **volume has to carry
+the model**. A package upgrade is worth less than a feature, so price is pressed from below by free
+tools and from above by the modest size of the job. That makes per-Run cost control a commercial
+necessity rather than a safety feature, and it favours the per-deployment licence — a licence is
+indifferent to how many small jobs run, where a per-outcome fee on cheap outcomes collects little while
+bearing all the cost.
 
 Whichever is chosen, one rule is already settled and is a positioning commitment: **we do not bill
 for autonomous compute consumed**. The intake identifies usage-metered agent billing as a specific
@@ -120,7 +146,9 @@ any specific one.
 
 | Risk | Why it bites | Engineering response |
 | --- | --- | --- |
-| Model capability improves until orchestration looks redundant | A single strong model with a long context may solve the tasks v1 decomposes | The moat is isolation, verification and audit, none of which a better model provides. Keep the orchestration layer thin so a better model reduces our cost rather than our relevance. |
+| Model capability improves until orchestration looks redundant | A single strong model with a long context may solve the tasks v1 decomposes | The moat is unattended execution, enforced budgets and audit, none of which a better model provides. Keep the orchestration layer thin so a better model reduces our cost rather than our relevance. |
+| The interactive tools are judged "good enough" | Claude Code and Cursor are free or cheap, improve faster than one person can, and their threat model — the agent has the developer's own privileges — is already accepted by most buyers | Compete on shape, not capability: they assume a human at the keyboard, and maintenance work is unattended, scheduled and high-volume. If a buyer says "we already have that", the disqualifying question is whether they run agents *unattended* with a budget cap and an audit trail ([ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md)) |
+| The repositories that need this most benefit least | Severe technical debt correlates with a weak test suite, and a weak suite is a weak oracle | No engineering fix exists. Qualify honestly at registration ([FR-004](../01-product/03-functional-requirements.md)) and treat suite strength as a sales qualification question, not a support problem |
 | Success rate too low to be worth reviewing | If a human must fix most output, the buyer is paying for supervision | Gate the roadmap on measured golden-task pass rate; narrow to task classes with strong oracles rather than broaden ([05-delivery/01-roadmap.md](../05-delivery/01-roadmap.md), kill criteria) |
 | Model prices or availability shift | Margin and feasibility both move | Tiered abstraction, two configured providers per tier, cost recorded per call so a re-price is a config change with a measurable effect |
 | Security incident at a design partner | Existential for a security-positioned product | Escape suite as a release gate; incident response and disclosure posture in [02-architecture/13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md) |

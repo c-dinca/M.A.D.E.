@@ -12,7 +12,7 @@ the non-negotiable rules and the stop conditions.
 | Situation | Read, in this order |
 | --- | --- |
 | **I am picking up a backlog item** | [`/AGENTS.md`](../AGENTS.md) → [05-delivery/02-backlog.md](05-delivery/02-backlog.md) (your item only) → the documents listed in that item's **Reading** field → [05-delivery/04-definition-of-done.md](05-delivery/04-definition-of-done.md) |
-| **I am new to the project and need the shape of it** | [00-context/01-problem-and-vision.md](00-context/01-problem-and-vision.md) → [02-architecture/01-system-overview.md](02-architecture/01-system-overview.md) → [00-context/03-glossary.md](00-context/03-glossary.md) |
+| **I am new to the project and need the shape of it** | [03-adr/0020-technical-debt-remediation-as-the-v1-product.md](03-adr/0020-technical-debt-remediation-as-the-v1-product.md) (what the product actually is) → [01-product/05-work-classes.md](01-product/05-work-classes.md) (the unit of work) → [02-architecture/01-system-overview.md](02-architecture/01-system-overview.md) → [00-context/03-glossary.md](00-context/03-glossary.md) |
 | **I am changing the state machine or a guard** | [02-architecture/05-orchestration-and-termination.md](02-architecture/05-orchestration-and-termination.md) → [`/contracts/state-machine.json`](../contracts/state-machine.json) → [03-adr/0002-langgraph-as-executor-with-pure-routing.md](03-adr/0002-langgraph-as-executor-with-pure-routing.md), [03-adr/0010-termination-guards.md](03-adr/0010-termination-guards.md) |
 | **I am touching the sandbox** | [02-architecture/04-execution-isolation.md](02-architecture/04-execution-isolation.md) → [03-adr/0005-gvisor-v1-firecracker-deferred.md](03-adr/0005-gvisor-v1-firecracker-deferred.md), [03-adr/0006-no-network-in-verification-sandbox.md](03-adr/0006-no-network-in-verification-sandbox.md) → [04-engineering/04-testing-strategy.md](04-engineering/04-testing-strategy.md) (escape suite section) |
 | **I am adding or changing an API endpoint** | [02-architecture/03-api-design.md](02-architecture/03-api-design.md) → [`/contracts/openapi.yaml`](../contracts/openapi.yaml) → [01-product/03-functional-requirements.md](01-product/03-functional-requirements.md) |
@@ -25,7 +25,7 @@ the non-negotiable rules and the stop conditions.
 ## Structure
 
 - **[00-context/](00-context/)** — why this exists, who is involved, the binding vocabulary, how it makes money, and [what in this specification is actually established versus assumed](00-context/05-evidence-and-confidence.md).
-- **[01-product/](01-product/)** — scope, personas, user stories, and the numbered requirements every test traces to.
+- **[01-product/](01-product/)** — scope, personas, [work classes](01-product/05-work-classes.md) (the unit of work), user stories, and the numbered requirements every test traces to.
 - **[02-architecture/](02-architecture/)** — how it works. The document set is shaped by the five unforgivable failures named in [02-architecture/01-system-overview.md](02-architecture/01-system-overview.md); risks with their own document are risks that can end the project.
 - **[03-adr/](03-adr/)** — the settled decisions, each with the alternative it beat and the cost it carries.
 - **[04-engineering/](04-engineering/)** — how to build in this repository without breaking it or colliding with another agent.
