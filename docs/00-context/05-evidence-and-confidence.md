@@ -64,11 +64,18 @@ customer does.
 Ranked by damage multiplied by likelihood, with the point at which each becomes known. This is the
 list to argue with.
 
+Updated by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md): the product is
+now maintenance work on existing repositories, which **removes** the old third-ranked risk (whether a
+verification command can be generated per Task — the oracle is now the repository's existing suite) and
+**adds** a new second-ranked one (OQ-09).
+
 | # | Claim | If false | Known at | Cost of being wrong |
 | --- | --- | --- | --- | --- |
-| 1 | Anyone will buy a security-hardened self-hosted agent platform | The strategy is wrong, not the architecture | Only at a design-partner conversation | Total. Nothing else matters |
+| 1 | Someone will pay to have maintenance work done unattended, rather than continuing to do it with people or accepting the debt | The strategy is wrong, not the architecture | Only at a design-partner conversation | Total. Nothing else matters |
+| 1b | Buyers distinguish "unattended, budgeted, audited" from "we already have Cursor" | The positioning collapses into a comparison we lose on capability and price | First three sales conversations | Total, and it is the question to ask before writing more code |
+| 2b | A dependency upgrade can obtain its new version without giving the Sandbox network access (OQ-09) | Either the no-network decision or the first work class has to change | Before WORK-02, by measuring image rebuild time | High. Blocks the first sellable capability |
 | 2 | gVisor installs and holds on the intended Proxmox host (OQ-08) | The isolation story needs a VM guest or Firecracker; M1 changes substantially | M1, and testable in a day | High, but cheap to discover — which is why the roadmap puts it first |
-| 3 | Verification commands can be produced per Task (OQ-07) | Every Task needs a human or a template; the product becomes much more manual | M4, approximable earlier | High. Mitigated by making templates the required path today |
+| 3 | ~~Verification commands can be produced per Task (OQ-07)~~ | **Largely retired** by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md): a work class declares its oracle, and for maintenance work it is the repository's existing suite. Returns only with generated planning at M4 | M4, if ever | Low now, high then |
 | 4 | The progress oracle's precision is acceptable | Either pass rate suffers or cost does | M5, only with the eval suite | Medium. Expect to retune; the ADR names this |
 | 5 | Search/replace patches apply often enough | Cost per success balloons on a formatting problem, not a reasoning one | M3 | Medium. [ADR-0008](../03-adr/0008-search-replace-patch-format.md) sets a 20% threshold for reopening |
 | 6 | Baked-in dependencies are workable in practice | A large share of real requests escalate for a package, and the product feels broken | M6, product-level | Medium-high. [ADR-0006](../03-adr/0006-no-network-in-verification-sandbox.md) names the reopening condition |
@@ -77,9 +84,10 @@ list to argue with.
 | 9 | Sandbox creation meets NFR-001 | Latency floor is worse than assumed; the number moves | M1, measured | Low. It is a provisional budget with a committed measurement |
 | 10 | Purity discipline in routing survives contact with deadlines | Replay diverges and fixes stop being provable | Continuously, via the replay suite | Medium. Enforced by lint rather than trusted |
 
-Note the shape: items 2, 5, 8 and 9 are discovered early and cheaply, by design. Items 1, 6 and 7 —
-the ones that decide whether the business exists — are discovered late and only by contact with a
-customer. That asymmetry is not fixable by better specification.
+Note the shape: items 2, 2b, 5, 8 and 9 are discovered early and cheaply, by design. Items 1, 1b, 6 and
+7 — the ones that decide whether the business exists — are discovered late and only by contact with a
+customer. That asymmetry is not fixable by better specification, and item 1b is answerable this week by
+three conversations rather than by any amount of building.
 
 ## How to audit a generated specification, including this one
 

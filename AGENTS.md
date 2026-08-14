@@ -4,12 +4,18 @@ Read this before anything else. It is short on purpose; everything it points at 
 
 ## What this project is
 
-M.A.D.E. is a self-hosted system in which specialised LLM agents — Architect, Developer, QA, DevOps
-and Reviewer — collaborate under a deterministic state machine to change an existing repository. All
-model-generated code executes inside an isolated Sandbox with no credentials and no network, and no
-change is called successful unless a declared command exits zero. It is sold to engineering
-organisations whose security function would otherwise veto giving an AI agent access to their source,
-which means the guarantees below are the product, not the scaffolding around it.
+M.A.D.E. removes maintenance and technical-debt work from an engineering team: it runs **unattended**
+against existing repositories, carries out jobs in declared **work classes** — a dependency upgrade
+that also fixes what the upgrade breaks, a lint-debt sweep, a mechanical API migration — and opens a
+pull request for a human to merge. Every job is proved by the repository's **own** test suite, executed
+in an isolated Sandbox with no credentials and no network, and nothing is called successful unless that
+command exits zero. It is sold to organisations whose maintenance burden cannot be staffed economically
+and whose client contracts forbid sending source to a third party, which is why unattended execution,
+enforced budgets and a complete audit trail are the product rather than the scaffolding.
+
+Read [ADR-0020](docs/03-adr/0020-technical-debt-remediation-as-the-v1-product.md) before anything else
+if you are about to write code. It defines the product boundary and it deferred a large part of what is
+specified here — the Architect and generated planning among it.
 
 ## Source of truth, in order
 
@@ -91,6 +97,13 @@ A change that weakens any of these is rejected regardless of what else it achiev
   tenant column, a vector index, webhooks, cross-Run memory, model-authored image builds, greenfield
   scaffolding. These are specified as seams precisely so that building them is a visible mistake
   rather than a plausible improvement.
+- **The Architect, `SPEC`, `PLAN` and plan approval are specified but deferred**
+  ([ADR-0020](docs/03-adr/0020-technical-debt-remediation-as-the-v1-product.md)). A work class supplies
+  the plan, so a Run reaches `IMPLEMENT` with zero model calls in `SPEC` or `PLAN`. Do not implement
+  generated planning because the specification describes it; check the milestone.
+- **Never accept work with no runnable oracle.** "Improve quality", "modernise this module", "make it
+  faster" are judgement calls dressed as tasks. If it cannot be checked by a command, it is not a work
+  class ([work classes](docs/01-product/05-work-classes.md)).
 - **Never add a fifth long-running process** without a superseding ADR
   ([NFR-021](docs/01-product/04-non-functional-requirements.md)).
 

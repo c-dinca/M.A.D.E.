@@ -1,8 +1,21 @@
 # ADR-0019 — Specification-first Projects: the generated specification bundle as a Run's first output
 
-**Status:** Proposed — **not in force.** Nothing in v1 implements this.
+**Status:** **Withdrawn** by [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), 2026-08-14.
 **Date:** 2026-08-06
-**Relates to:** OQ-03, [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0018](0018-spec-as-contract-and-spec-lint.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md) (Seam 4)
+**Relates to:** OQ-03 (resolved against this design), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0018](0018-spec-as-contract-and-spec-lint.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md) (Seam 4)
+
+> **Withdrawn, with the reasoning retained deliberately.** OQ-03 has been resolved in favour of
+> maintenance work on existing repositories
+> ([ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md)), so greenfield generation is out
+> of scope and the trigger below is unreachable. This record is kept because the design is sound and
+> the argument would have to be reconstructed from scratch if the strategy ever changes: a
+> specification phase does have an executable oracle, and that remains true.
+>
+> Two things it justified are **retained**, because they pay for themselves in the maintenance product
+> independently: `spec-lint` as a library with a machine-readable report (`SPEC-01`), and an enforced
+> `touches` path scope per Task ([FR-080](../01-product/03-functional-requirements.md)) — which is
+> *more* useful for maintenance work than it would have been here, because the affected paths of a
+> dependency upgrade are predictable in advance.
 
 ## Context
 

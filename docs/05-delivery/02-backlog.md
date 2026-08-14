@@ -390,7 +390,52 @@ Roles map to directories and are defined in [`/AGENTS.md`](../../AGENTS.md).
 
 ---
 
-## M4 — Multi-agent and delivery
+## M3b — The first work class (the critical path to revenue)
+
+Replaces M4 on the critical path ([ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md)).
+No Architect, no generated planning.
+
+### WORK-01 — Work-class registry and fixed task templates
+**Role:** orchestration · **Blocked by:** ORCH-07, ORCH-06 · **Blocks:** WORK-02, WORK-03, WORK-04
+**Reading:** [01-product/05-work-classes.md](../01-product/05-work-classes.md), [03-adr/0020-technical-debt-remediation-as-the-v1-product.md](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md), [`/contracts/schemas/artifact-task-graph.schema.json`](../../contracts/schemas/artifact-task-graph.schema.json)
+**Touches:** `made/workclasses/**`, `made/orchestrator/nodes/intake.py`, `tests/unit/test_work_classes.py`
+**Acceptance criteria**
+- A class declares a task template, a `verification_command`, a `touches` scope and an oracle; the registry validates all four at load.
+- A Run created from a class reaches `IMPLEMENT` with **zero** model calls in `SPEC` or `PLAN`, asserted by counting `llm_calls` rows (FR-081).
+- The instantiated Task passes the same `GUARD_PLAN_VALID` checks as a generated one — the template is not a bypass.
+- Enabling a class on a Project executes its oracle against the base branch and refuses if it cannot run (FR-085).
+
+### WORK-02 — The `dependency_upgrade` work class
+**Role:** orchestration · **Blocked by:** WORK-01 · **Blocks:** GIT-02 (for the first sellable path)
+**Reading:** [01-product/05-work-classes.md](../01-product/05-work-classes.md), [02-architecture/08-context-and-retrieval.md](../02-architecture/08-context-and-retrieval.md), [03-adr/0006-no-network-in-verification-sandbox.md](../03-adr/0006-no-network-in-verification-sandbox.md)
+**Touches:** `made/workclasses/dependency_upgrade.py`, `made/workclasses/manifests/**`, `tests/integration/test_dependency_upgrade.py`
+**Acceptance criteria**
+- Bumps a dependency in a manifest, and when the bump breaks the suite, locates and fixes the affected call sites.
+- Records the manifest change and the resolved versions on the Run.
+- Rejects a patch that edits a manifest without a consistent lockfile update (FR-083).
+- On a seed repository with a deliberately breaking minor upgrade, produces a branch whose existing suite passes.
+- **Blocked on OQ-09**: how the new package version reaches a Sandbox that has no network. Do not implement a network path; resolve the question first.
+
+### WORK-03 — Scheduler for recurring Runs
+**Role:** platform · **Blocked by:** WORK-01, LEDG-01 · **Blocks:** —
+**Reading:** [01-product/05-work-classes.md](../01-product/05-work-classes.md) (scheduling), [02-architecture/07-cost-control.md](../02-architecture/07-cost-control.md), [01-product/04-non-functional-requirements.md](../01-product/04-non-functional-requirements.md) (NFR-021)
+**Touches:** `made/store/schedules.py`, `made/orchestrator/scheduler.py`, `tests/integration/test_scheduler.py`
+**Acceptance criteria**
+- A schedule per Project and work class creates Runs without a person (FR-082).
+- Runs as a loop inside the existing worker; the process count is unchanged, asserted by the topology test (NFR-021).
+- A schedule fanning out beyond the concurrency cap or a budget ceiling is refused, not queued invisibly — the case the guards exist for.
+- A missed window does not backfill silently; a skipped Run is an event with a reason.
+
+### WORK-04 — The `pr_review` work class, advisory only
+**Role:** orchestration · **Blocked by:** WORK-01, AGENT-05 · **Blocks:** —
+**Reading:** [01-product/05-work-classes.md](../01-product/05-work-classes.md), [02-architecture/06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md)
+**Touches:** `made/workclasses/pr_review.py`, `tests/unit/test_pr_review_readonly.py`
+**Acceptance criteria**
+- Runs with a read-only toolbelt; producing a `Patch` is unrepresentable, not merely forbidden (FR-084).
+- Output is comments on the human's pull request; the Run is never reported as verified.
+- A test asserts the class cannot be configured with a write tool.
+
+## M4 — Multi-agent and generated planning (deferred behind first revenue)
 
 ### AGENT-02 — Architect: Spec and TaskGraph
 **Role:** orchestration · **Blocked by:** ORCH-06, CTX-03 · **Blocks:** ORCH-08
@@ -555,14 +600,21 @@ Roles map to directories and are defined in [`/AGENTS.md`](../../AGENTS.md).
 
 ## Open questions
 
-Every open question marked inline in the specification appears here with what it blocks. An agent that
-encounters one MUST NOT invent an answer: stop and report per [`/AGENTS.md`](../../AGENTS.md).
+Every **unresolved** open question marked inline in the specification appears here with what it blocks.
+An agent that encounters one MUST NOT invent an answer: stop and report per
+[`/AGENTS.md`](../../AGENTS.md).
+
+Resolved questions stay in the table, struck through, with the decision that closed them. The
+identifier is never reused. Keeping the row is deliberate: an agent finding a reference to `OQ-03` in
+an older document needs to learn that it was answered and where, rather than concluding the table is
+incomplete.
 
 | ID | Question | Blocks | Resolved by |
 | --- | --- | --- | --- |
 | **OQ-01** | Is the first paying deployment self-hosted by the customer or hosted by us? ([00-context/02](../00-context/02-ecosystem-and-stakeholders.md)) | Billing surface, tenancy columns, whether Seam 2 is a v1 concern. Blocks no current item; the specification assumes self-hosted ([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)) | Founder naming the deployment shape of the first design-partner install |
 | **OQ-02** | What compliance, retention and data-residency obligations do the first customers have? ([02-architecture/09](../02-architecture/09-audit-and-replay.md), [02-architecture/13](../02-architecture/13-security-and-compliance.md)) | The default retention value and any compliance claim in customer material. Blocks no implementation item | Founder confirming the first design partner's requirements |
-| **OQ-03** | Does v1 change an existing repository, or generate a new project from a description? ([01-product/01](../01-product/01-scope-and-personas.md)) | The persona set, Project registration, the Architect prompt, Seam 4. Would invalidate AGENT-02 and parts of ORCH-06 if answered "greenfield" | Founder confirming what the first design partner wants. The oracle mechanism that used to be missing now has a candidate design in [ADR-0019](../03-adr/0019-specification-first-projects.md) (`Proposed`), so this is now a product decision rather than an open technical one |
+| ~~**OQ-03**~~ | ~~Existing repository or greenfield?~~ | — | **RESOLVED 2026-08-14** by [ADR-0020](../03-adr/0020-technical-debt-remediation-as-the-v1-product.md): existing repositories, and specifically maintenance work in declared work classes. Greenfield out of scope; [ADR-0019](../03-adr/0019-specification-first-projects.md) withdrawn |
+| **OQ-09** | How does a `dependency_upgrade` Run obtain the new package version, given that Sandboxes have no network? ([01-product/05](../01-product/05-work-classes.md)) | **Blocks WORK-02**, and therefore the first sellable capability. The most important open question in the specification | Measuring image rebuild time for a real repository against the [NFR-001](../01-product/04-non-functional-requirements.md) Sandbox budget, then choosing between a per-candidate image rebuild and a pre-populated package cache. Do **not** solve it by giving the Sandbox network access |
 | **OQ-04** | Infrastructure budget ceiling, and does GPU hardware for local inference already exist? ([00-context/04](../00-context/04-business-model.md), [02-architecture/11](../02-architecture/11-infrastructure-and-devops.md)) | Default tier configuration and how often the evaluation harness can run. Soft-blocks EVAL-03's baseline economics | Founder stating available VRAM and monthly infrastructure ceiling |
 | **OQ-05** | Which model and endpoint serves each capability tier, at what price? ([00-context/02](../00-context/02-ecosystem-and-stakeholders.md), [02-architecture/10](../02-architecture/10-llm-integration-and-evaluation.md)) | The shipped example configuration and any published cost-per-run figure. Does not block implementation — tiers are configuration | Running EVAL-01 against two candidates per tier and recording measured pass rate and cost |
 | **OQ-06** | Pricing structure and price point ([00-context/04](../00-context/04-business-model.md)) | Any billing surface and any unit-economics claim. Blocks no v1 item, deliberately | Two design-partner conversations establishing the budget line and the comparison |
