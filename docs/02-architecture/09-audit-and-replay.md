@@ -191,8 +191,25 @@ which is why that constraint is enforced rather than encouraged.
 ## Retention
 
 Default 90 days for events, artifacts and Sandbox execution records, configurable per deployment; the
-replay corpus is exempt because it is committed as fixtures. Retention is a deletion job over a tenant-
-free single-tenant store, so it is a date-bounded delete plus an object-store prefix sweep.
+replay corpus is exempt because it is committed as fixtures. Retention is a deletion job, now
+tenant-scoped: a date-bounded delete plus an object-store prefix sweep, per tenant.
+
+> **Open question OQ-21 — the 2026-09 vision change created two entities that outlive retention, and
+> this document's design does not model them.** A **worksite** may run for months and its burn-down
+> *is* its event history, so pruning its early cycles destroys the campaign's own record. The
+> **effectiveness dashboard** computes its measures from these logs over a window
+> ([FR-131](../01-product/03-functional-requirements.md)), so it cannot honestly report a window longer
+> than retention — and acceptance rate over 90 days may be a shorter view than a buyer expects.
+>
+> Exempting an active worksite makes retention conditional on entity type, which the current
+> date-bounded delete does not express. **No answer is invented here.** The candidates are: retention
+> per entity type; an exemption while a worksite is active with pruning on completion; or a longer
+> default with the storage cost accepted. **Blocks:** the default retention value, the retention job's
+> design, and the maximum window the dashboard can offer. **Resolved by:** the founder deciding, on top
+> of OQ-02's compliance answer, which sets the floor.
+>
+> Noted for the reader: this is distinct from OQ-02, which is about obligations. This is a functional
+> conflict between two things the specification now requires.
 
 > **Open question OQ-02** — Whether any first customer has a contractual or regulatory retention
 > requirement (a minimum retention for audit records, or a maximum for source-derived data), and
