@@ -1,46 +1,75 @@
 # Infrastructure and DevOps
 
-Sized for one operator ([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)). Every process,
-alert and manual step is paid for out of one person's attention, so "boring" here is a correctness
-requirement rather than a preference: an operator who cannot debug the system at 22:00 will stop
-running it.
+Sized for one operator. Every process, alert and manual step is paid for out of one person's attention,
+so "boring" here is a correctness requirement rather than a preference: an operator who cannot debug
+the system at 22:00 will stop running it. That constraint survives the 2026-09 vision change, which
+superseded [ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md) on tenancy while carrying forward
+the process-kind and alert ceilings it justified
+([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md),
+[ADR-0026](../03-adr/0026-resident-agents-event-ingestion-visible-queues.md)).
 
 ## Environments
 
 | Environment | Purpose | Where | Data |
 | --- | --- | --- | --- |
-| `local` | Development | Developer workstation, Linux with the isolation runtime installed | Seeded fixtures only |
-| `ci` | Automated gates | Pipeline runners | Ephemeral; escape suite runs against the real runtime |
-| `staging` | Pre-release verification and the nightly evaluation run | One host under our control | Seed repositories, no customer data |
-| `production` | A customer's own deployment | The customer's host | The customer's own |
+| `local` | Development | Developer workstation, Linux with the isolation runtime installed | Seeded fixtures only, one tenant |
+| `ci` | Automated gates | Pipeline runners | Ephemeral; escape suite runs against the real runtime, including the cross-tenant cases |
+| `staging` | Pre-release verification and the nightly evaluation run | One host under our control | Seed repositories, several synthetic tenants, no customer data |
+| `production — self-hosted` | A customer's own deployment | The customer's host | The customer's own, one tenant |
+| `production — hosted` | **New.** The service we operate | Our host | **Several customers' source code** |
 
-There is no shared production environment we operate. "Production" is whatever the customer installed,
-which is why the bootstrap procedure is a first-class deliverable with a time budget
-([NFR-020](../01-product/04-non-functional-requirements.md)) rather than an internal runbook.
+> **There is now a production environment we operate**, which is the largest operational change in this
+> revision. Under the previous plan "production is whatever the customer installed", and the honest
+> consequence recorded in ADR-0013 was that we could not see production at all. Hosted operation
+> restores that visibility and takes on the obligation that comes with it: backups contain other
+> organisations' source, support contains it, and the compliance questions OQ-02 records become ours
+> ([18-deployment-and-tenancy.md](18-deployment-and-tenancy.md)).
+>
+> **Which shape ships first is OQ-01**, and nothing here assumes it. The bootstrap procedure remains a
+> first-class deliverable with a time budget ([NFR-020](../01-product/04-non-functional-requirements.md))
+> because the self-hosted shape is the more constraining of the two, and because a hosted deployment is
+> bootstrapped by the same procedure.
+
+**`staging` runs several synthetic tenants deliberately.** A single-tenant staging environment cannot
+exercise row-level security, cross-tenant reachability or per-tenant admission — which are precisely
+the boundaries whose failure is a disclosure rather than a wrong answer
+([NFR-029](../01-product/04-non-functional-requirements.md)).
 
 ## Topology
 
-Four long-running processes, the ceiling set by
-[NFR-021](../01-product/04-non-functional-requirements.md):
+Four long-running process **kinds**, the ceiling set by
+[NFR-021](../01-product/04-non-functional-requirements.md). The 2026-09 vision change added ingestion,
+scheduling, worksite driving and chat egress, and **all of it fits inside the existing kinds** —
+recorded here because the obvious reading of "agents that live in your infrastructure" is that it needs
+new processes, and it does not
+([ADR-0026](../03-adr/0026-resident-agents-event-ingestion-visible-queues.md)).
 
-| Process | Role | Restart behaviour |
+| Process kind | Role | Restart behaviour |
 | --- | --- | --- |
-| `api` | HTTP API and the server-rendered run viewer | Stateless; restart freely |
-| `worker` | Graph executor, effect handlers, reaper | Holds Run leases; on restart re-acquires and resumes from the event log |
-| `postgres` | System of record and checkpoints | Persistent volume; the one stateful component that matters |
-| `objectstore` | Content-addressed artifacts (S3-compatible, MinIO) | Persistent volume |
+| `api` | Control API, the console, **and the inbound ingress endpoints** ([FR-116](../01-product/03-functional-requirements.md)) | Stateless; restart freely. An inbound trigger delivered during a restart is redelivered by the provider and rejected as a duplicate if it already landed |
+| `worker` | Graph executor, effect handlers, reaper, **scheduler loop, worksite driver loop, chat egress handler** | Holds Run leases; on restart re-acquires and resumes from the event log. A worksite mid-cycle resumes from its own log ([FR-101](../01-product/03-functional-requirements.md)) |
+| `postgres` | System of record, three event logs, the work queue, claims, checkpoints | Persistent volume; the one stateful component that matters |
+| `objectstore` | Content-addressed artifacts and evidence records, tenant-prefixed (S3-compatible, MinIO) | Persistent volume |
 
 Sandboxes are not processes in this list: they are created and destroyed per Run by the worker through
 the sandbox runtime installed on the host.
 
-Deliberately absent, each with the reason: **no message broker** — Postgres `SELECT … FOR UPDATE SKIP
-LOCKED` is sufficient at this concurrency and removes a whole component; **no cache** — nothing is
-read often enough to need one, and a cache is a second source of truth; **no reverse proxy in the
-default install** — the operator terminates TLS with whatever they already run; **no Kubernetes** —
-one host, four processes.
+**Replicating a kind is not a fifth kind.** Running two `worker` processes is permitted by the lease
+mechanism and by NFR-021's process-*kind* reading. It is not designed, sized or tested, and **tenant
+fairness is the part that would need real work**
+([17-persistence-and-concurrency.md](17-persistence-and-concurrency.md)).
 
-Adding a fifth process requires a superseding ADR. That rule exists because process count is the
-variable that most reliably predicts whether a solo-operated system stays operated.
+Deliberately absent, each with the reason: **no message broker** — Postgres `SELECT … FOR UPDATE SKIP
+LOCKED` is sufficient at this concurrency, removes a whole component, and is the only option that can
+write an effect in the same transaction as its event; **no cache** — nothing is read often enough to
+need one, and a cache is a second source of truth; **no reverse proxy in the default install** — the
+operator terminates TLS with whatever they already run, though a hosted deployment will need one and
+that is a deployment concern rather than a process kind; **no Kubernetes**; **no separate scheduler,
+gateway or notification service** — each would be a fifth kind for work that fits in the first two.
+
+Adding a fifth kind requires a superseding ADR. That rule exists because process count is the variable
+that most reliably predicts whether a solo-operated system stays operated, and it is now under more
+pressure than when it was written.
 
 ## Host requirements
 
@@ -134,7 +163,7 @@ hosted endpoints are configured. Our infrastructure cost is a staging host and C
 ## Scaling path
 
 The ordering is a prediction about which limit binds first, and it matters because building the wrong
-one first is wasted work.
+one first is wasted work. The vision change added a step and moved one, and both are marked.
 
 1. **Sandbox concurrency on one host** binds first: CPU and memory per Sandbox against the host's
    capacity. Response: raise host size, lower per-Sandbox limits, or lower the concurrency cap.
@@ -144,8 +173,20 @@ one first is wasted work.
 3. **Sandbox hosts as a pool** third: `SandboxProvider` gains a host-selection step. This is the point
    at which the control plane and the sandbox zone stop sharing a host, which also closes the residual
    risk recorded in [ADR-0005](../03-adr/0005-gvisor-v1-firecracker-deferred.md).
-4. **Postgres** last, and probably never at this workload. When it binds, read replicas for the viewer
-   before anything more exotic.
+4. **Postgres** last, and probably never at this workload. When it binds, read replicas for the console
+   before anything more exotic. **Note one new pressure**: the effectiveness dashboard's queries fold
+   event logs ([02-data-model.md](02-data-model.md#query-rules)), which is why the dashboard is a
+   windowed report rather than a live page and why a read replica is the obvious first move if it hurts.
 
-Multi-tenancy is not on this path — it is a product change, not a scaling one, and it is specified in
-[15-future-phase-seams.md](15-future-phase-seams.md).
+**A step was added, and it is between 2 and 3.** *Tenant fairness in the queue* binds when several
+tenants compete for one deployment's capacity, and it binds before the sandbox host pool does. `SKIP
+LOCKED` gives no fairness guarantee; per-tenant concurrency caps bound the damage without eliminating
+it. The response is either a fairness mechanism in SQL or the message-broker decision reopening, and
+the trigger is a measurement — sustained per-tenant queue wait at p95
+([ADR-0026](../03-adr/0026-resident-agents-event-ingestion-visible-queues.md)).
+
+**Multi-tenancy is no longer on this path, for a different reason than before.** It used to be off the
+path because it was a deferred product change. It is now off the path because it is already built
+([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md)) — Seam 2 is closed
+([15-future-phase-seams.md](15-future-phase-seams.md)). What tenancy contributes to scaling is the
+fairness problem above, not a migration.
