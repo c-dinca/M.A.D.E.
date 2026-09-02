@@ -1,0 +1,4 @@
+{
+  "name": "M.A.D.E.",
+  "install": "python3 -m pip install --user --upgrade uv && uv --version"
+}
