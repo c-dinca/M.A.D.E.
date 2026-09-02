@@ -24,16 +24,13 @@ wanted before the second customer.
 > change request and approving a generated plan — **US-004, US-005, US-006 and US-008** — move to the
 > deferred M4 milestone along with the Architect. They are retained rather than withdrawn because they
 > are still the correct stories for generated planning when it is built. The stories that carry the v1
-> product are the honest-failure and audit epics (US-010 to US-017) plus a new one below, because a
-> Run's trigger is now a schedule and a work class rather than a person and a sentence.
+> product are the honest-failure and audit epics (US-010 to US-017) plus **US-023**, which is in Epic 2
+> below, because a Run's trigger is now a schedule and a work class rather than a person and a
+> sentence.
 >
-> **US-023 — Have maintenance done while nobody watches** · P4, P2 · P0 · FR-081, FR-082, FR-083
-> As a delivery manager, I want dependency upgrades attempted across my repositories on a schedule,
-> with a cost ceiling I set, and pull requests I can merge.
-> *Given* a Project with the `dependency_upgrade` class enabled and a weekly schedule, *when* the
-> window arrives, *then* Runs are created without a person, each reaches `IMPLEMENT` with no planning
-> model call, each is bounded by the concurrency cap and the budget ceilings, *and* the ones that
-> succeed produce pull requests whose diff a reviewer merges without editing it.
+> **US-023 was moved into Epic 2 by the 2026-09 rewrite.** It had been written inline in this note,
+> which left a P0 story living inside a paragraph about a past re-prioritisation — the kind of thing an
+> agent skims past. Its text is unchanged.
 
 ## Epic 1 — Get it running
 
@@ -58,6 +55,14 @@ with it.
 Project is created.
 
 ## Epic 2 — Get a change made
+
+**US-023 — Have maintenance done while nobody watches** · P4, P2 · P0 · FR-081, FR-082, FR-083
+As a delivery manager, I want dependency upgrades attempted across my repositories on a schedule,
+with a cost ceiling I set, and pull requests I can merge.
+*Given* a Project with the `dependency_upgrade` class enabled and a weekly schedule, *when* the
+window arrives, *then* Runs are created without a person, each reaches `IMPLEMENT` with no planning
+model call, each is bounded by the concurrency cap and the budget ceilings, *and* the ones that
+succeed produce pull requests whose diff a reviewer merges without editing it.
 
 **US-004 — Submit a change request** · P2 · P0 · FR-011, FR-012, FR-021
 As a lead developer, I submit a change request against a registered repository and receive a Run

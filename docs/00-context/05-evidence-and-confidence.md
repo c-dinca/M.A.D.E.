@@ -24,11 +24,12 @@ commit:
 | **The constraints that carry invariants actually reject bad data** | 23 hostile inserts probed against the live schema; all 23 rejected — including a mutable image tag (FR-008), a default-branch target (FR-010), a duplicate idempotency key (FR-021), a Task with an empty verification command (FR-024), event sequence 0 (INV-1), negative spend (INV-3), a duplicate attempt number (INV-4), a malformed digest (INV-5), a duplicate model-call idempotency key, and an argv field containing a shell string |
 | The state machine is well-formed | No self-loops, no transition out of a terminal State, every State reaches a terminal State, every guard and tool referenced exists |
 | The state enumeration agrees across contract, DDL, JSON Schemas and API | Asserted by comparison, not by reading |
-| Every internal link and heading anchor resolves | 895 links checked |
-| Every diagram renders | 6 Mermaid diagrams compiled |
-| Every requirement has an identifier and a named test method | 80 FRs, 28 NFRs, all referenced somewhere outside their own definition |
-| Every backlog item declares Reading, Touches, Role, acceptance criteria and dependencies | 56 items checked |
-| Every ADR records a rejected alternative and negative consequences | 19 checked |
+| Every internal link and heading anchor resolves | 2,212 internal links and anchors checked after the 2026-09 rewrite; zero unresolved |
+| Every diagram renders | 6 Mermaid diagrams compiled **before** the rewrite. The diagrams added by it — the container view, the component view, the `ASSESS` sub-graph, the worksite and request lifecycles — have **not** been compiled |
+| Every requirement has an identifier and a named test method | 150 FRs (one **Withdrawn**) and 42 NFRs, each with an identifier and a Verified-by or Measured-by column. **Correction:** the previous version of this row claimed all of them were "referenced somewhere outside their own definition". That was **not true then and is not true now** — 11 FRs (FR-002, FR-003, FR-006, FR-007, FR-009, FR-013, FR-014, FR-015, FR-019, FR-020, FR-022) appear only in their own document, and the same 11 were unreferenced before the rewrite. They are Epic A and Epic B requirements no backlog item's acceptance criteria happen to cite. Not a defect in the requirements; a defect in the claim, corrected here rather than left flattering |
+| Every referenced identifier is defined | 150 FRs, 42 NFRs, 23 OQs, 18 INVs all resolve; no identifier is referenced without a definition, and no FR or NFR is defined twice except FR-084, which is deliberately present struck-through in its epic and again in the Withdrawn table |
+| Every backlog item declares Reading, Touches, Role, acceptance criteria and dependencies | 56 items checked **before** the rewrite. The items it added declare the same fields; the check has not been re-run mechanically |
+| Every ADR records a rejected alternative and negative consequences | 19 checked before the rewrite; ADR-0021 to ADR-0028 each carry at least two steelmanned alternatives and a mandatory negative section, **not yet mechanically checked** |
 
 **2. Internally consistent but externally unproven.** The largest category, and the one to be careful
 about. The architecture does not contradict itself. Whether it *works* is untested — no line of the

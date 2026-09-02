@@ -37,8 +37,8 @@ unmerged pull requests are reported as *work in flight* and never as progress.
 
 A worksite whose objective cannot be counted by a command is not a worksite
 ([FR-095](03-functional-requirements.md)). This is the work-class oracle rule
-([05-work-classes.md](05-work-classes.md)) applied one level up, and it does the same job: it keeps
-"modernise this codebase" out.
+([05-work-classes.md](05-work-classes.md)) applied one level up, and it serves the same purpose: it
+keeps "modernise this codebase" out.
 
 Examples of a real progress command: the count of `.js` files under the scope; the count of violations
 a lint rule reports; the count of services whose manifest still pins the old framework; the count of

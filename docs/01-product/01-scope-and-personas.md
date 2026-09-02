@@ -183,9 +183,19 @@ again whenever something looks unusual. Reads architecture documents, then the a
 question is *"what exactly did it execute, what could it reach, and can you prove it."* They are the
 reason the event log is append-only and complete rather than best-effort. At an outsourcing
 organisation their concern is usually contractual rather than paranoid — the client agreement forbids
-sending source to a third party — which the self-hosted deployment satisfies by construction
-([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)) and is a materially easier conversation
-than persuading a CISO.
+sending source to a third party — which a **self-hosted** deployment satisfies by construction
+([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md)) and is a materially
+easier conversation than persuading a CISO.
+
+Three things changed for them with the vision change, and all three add to their list. **Write access**
+is now direct, so their question gains "and what can it do to our repository" — answered by a printable
+permission envelope and unilateral revocation
+([ADR-0027](../03-adr/0027-scoped-application-identity-branches-only.md)). **A hosted deployment cannot
+make the contractual argument at all**, because we hold the source; that conversation is the harder one
+again, and it is one of the things OQ-01 decides. And **a chat integration means an inbound surface and
+an outbound egress path**, which is a new section of their review
+([02-architecture/13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md),
+adversary A6).
 
 ## Explicitly not users in v1
 

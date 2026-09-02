@@ -23,11 +23,14 @@ surface ([01-product/09-web-interface-and-admin-console.md](../01-product/09-web
 > Putting a Prometheus counter on a renewal decision would be the inconsistency this project cannot
 > afford.
 
-The binding constraint on this whole document is one person
-([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)). An alert that fires and is ignored has
-negative value: it trains the operator to ignore the next one. Hence a hard cap of eight rules
+The binding constraint on this whole document is one person, and it survived the vision change even
+though the ADR that first stated it did not
+([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md) carries the ceilings
+forward). An alert that fires and is ignored has negative value: it trains the operator to ignore the
+next one. Hence a hard cap of eight rules
 ([NFR-022](../01-product/04-non-functional-requirements.md)) — adding a ninth means removing one and
-justifying the trade.
+justifying the trade, **which is exactly what the vision change had to do** to make room for an
+ingestion alert.
 
 ## Logging
 

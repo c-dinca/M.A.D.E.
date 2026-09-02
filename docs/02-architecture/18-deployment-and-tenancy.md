@@ -91,7 +91,10 @@ much closer than when it was written.
 > **Open question OQ-10** — Whether the strong-isolation requirement survives as specified, is relaxed
 > to containers, or is deferred. The current specification requires a non-host kernel boundary
 > ([ADR-0005](../03-adr/0005-gvisor-v1-firecracker-deferred.md)) because it assumed hostile-input and
-> untrusted-code threat models, and both still hold. **Multi-tenant hosting raises the stakes rather
+> untrusted-code threat models, and both still hold. **ADR-0005's own revisit trigger has already fired
+> on this** — it names "the deployment becomes multi-tenant or hosted by us" as a condition, and
+> [ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md) met it — so this is not
+> a new question so much as a scheduled one arriving. **Multi-tenant hosting raises the stakes rather
 > than lowering them**: the same boundary now separates customers from each other, and
 > [13-security-and-compliance.md](13-security-and-compliance.md) already states honestly that a
 > vulnerability in the sandbox runtime's user-space kernel is a host compromise — which in a hosted
