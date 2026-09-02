@@ -6,7 +6,11 @@ document is the procedure, that one is the law.
 ## Picking up an item
 
 1. **Choose.** Take the highest item in [02-backlog.md](02-backlog.md) whose **Blocked by** items are
-   merged.
+   merged. **If your item concerns an entity added by the 2026-09 vision change — lane, worksite,
+   request, finding, evidence record, tenant, user, entitlement, ingress event, queue, claim — check
+   that its `CON-` contract item has merged.** Those entities are absent from
+   [`/contracts/`](../../contracts/), which is normative, so until the contract lands the prose
+   describing them has no normative form and the item is not ready. Stop and report.
 2. **Check for collisions.** List open branches and pull requests. If your item's **Touches** overlaps
    an in-flight item, stop and take another. Two agents editing one file is not a merge problem, it is
    two agents having been told different things
@@ -67,17 +71,35 @@ so producing it here would be self-defeating.
 Ranked by damage multiplied by likelihood. Each names the consequence, because a rule whose reason is
 understood is followed in the cases it did not anticipate.
 
-**1. Putting IO or a clock read in a routing predicate or a guard.** It looks harmless — you need the
-current time to check a TTL, or the attempt count from the database. The consequence is that replay
-diverges from production, [NFR-016](../01-product/04-non-functional-requirements.md) fails, and every
-future bug becomes unprovable because the historical stream no longer reproduces. Time enters as an
-event; guards receive data, not repositories ([ADR-0002](../03-adr/0002-langgraph-as-executor-with-pure-routing.md)).
+**1. Putting IO or a clock read in a routing predicate, a guard, or the campaign progress oracle.** It
+looks harmless — you need the current time to check a TTL, whether a schedule window is due, how old a
+queue item is, or whether a worksite cycle should fire. The consequence is that replay diverges from
+production, [NFR-016](../01-product/04-non-functional-requirements.md) fails, and every future bug
+becomes unprovable because the historical stream no longer reproduces. Time enters as an event;
+predicates receive data, not repositories
+([ADR-0002](../03-adr/0002-langgraph-as-executor-with-pure-routing.md)). **The 2026-09 vision change
+added four more places to make this mistake** — schedules, queue ages, worksite cycles and
+clarification TTLs — which is why it is still first.
 
 **2. Making verification more forgiving to get a Run to pass.** Retrying on a non-zero exit, treating a
 timeout as a pass, letting the Reviewer mark success, allowing an agent to adjust the command. Every one
 of these is a direct attack on [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures),
 which is the product's central claim. It will be tempting because a failing Run looks like your bug
 ([ADR-0014](../03-adr/0014-verification-oracle-is-authoritative.md)).
+
+**2b. Letting advisory output borrow the credibility of verified output.** Describing an advisory Run as
+*verified*, rendering an `unverified` finding like a `demonstrated` one, counting an evidence record as
+a verification, blending an acceptance rate across lanes, or dropping a denominator so a percentage
+looks better. Every one is UF-3 arriving through the front door with permission
+([ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md),
+[01-product/06-lanes.md](../01-product/06-lanes.md)). **The pressure will not come from an attacker; it
+will come from whoever is trying to make a summary look tidy, and it will arrive as a reasonable
+request.**
+
+**2c. Suppressing a finding you could not demonstrate.** It raises the evidence ratio and makes the
+output worse, because a reviewer reading only demonstrable findings reasonably concludes nothing else
+was found. Emit it labelled *unverified*
+([FR-149](../01-product/03-functional-requirements.md)).
 
 **3. Adding a fallback when the isolation runtime is unavailable.** Any code that continues with the
 default runtime makes the product's claim false while every test still passes. The system must refuse
@@ -108,7 +130,38 @@ returns a wrong answer whenever the last event did not change state
 ([02-data-model.md](../02-architecture/02-data-model.md)).
 
 **10. Raising a cap or a ceiling to make something finish.** Removes the bound UF-2 depends on. Caps are
-Project configuration, versioned and recorded — never a code change.
+Project configuration, versioned and recorded — never a code change. **This now includes a worksite's
+four ceilings, which may not be raised while it is active**
+([FR-097](../01-product/03-functional-requirements.md)) — and a campaign that runs out of budget is
+exactly the case where raising a number feels like operations rather than a decision.
+
+**10b. Writing a query without a tenant in scope.** The query works. It returns rows. It returns
+someone else's. This is the one defect class whose symptom is success, and it is why row-level security
+exists and why a static check over `made/store/` looks for it
+([FR-140](../01-product/03-functional-requirements.md),
+[NFR-029](../01-product/04-non-functional-requirements.md)).
+
+**10c. Counting delivered pull requests as worksite progress.** They are work in flight — review debt
+the system created, not outcome it produced. Progress is what the progress command measured on the
+default branch ([FR-096](../01-product/03-functional-requirements.md)). Counting rows in `runs` would
+be counting our activity and reporting it as their outcome.
+
+**10d. Retrying an authorisation failure.** A missing git permission is a statement about authority,
+not availability. It parks; it is never retried, never falls back to another credential or ref, and
+never degrades delivery ([FR-125](../01-product/03-functional-requirements.md)). A retry loop here turns
+a printable boundary into a suggestion.
+
+**10e. Queueing something invisibly.** Internally generated work may queue; every queued item carries
+its position, age, reason and cause, and every queue is bounded
+([FR-117](../01-product/03-functional-requirements.md)). The test is whether an operator can answer
+"why has nothing happened for two hours" from the interface. A bare `INSERT` into a work table with no
+reason fails that test.
+
+**10f. Posting anything to a chat platform that is not on the allowlist.** Source, patch content,
+verification output, repository paths, file names and finding bodies are C2 and a chat channel is a
+third party with loose access control and long retention
+([FR-114](../01-product/03-functional-requirements.md)). The allowlist lives in `made/chat/` and
+nowhere else.
 
 **11. Storing file contents in graph state.** Serialises the codebase into every checkpoint and leaks it
 into prompts ([ADR-0007](../03-adr/0007-git-worktree-as-project-state.md)).
@@ -117,10 +170,28 @@ into prompts ([ADR-0007](../03-adr/0007-git-worktree-as-project-state.md)).
 log, the schema and the API describe the same thing differently, and an agent debugging later builds a
 wrong model ([00-context/03-glossary.md](../00-context/03-glossary.md#banned-synonyms)).
 
-**13. Implementing something from the "do not build" lists.** Parallel Task execution, a tenant column,
-a vector index, webhooks, cross-Run memory. Each is specified as a seam precisely so that building it is
-a visible mistake rather than a plausible improvement
+**13. Implementing something from the "do not build" lists.** Parallel **Task** execution, a vector
+index, generic webhooks, cross-Run memory, a build service, generated planning. Each is specified as a
+seam precisely so that building it is a visible mistake rather than a plausible improvement
 ([15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)).
+
+**Two entries on that list changed in 2026-09 and the change is easy to get wrong.** *Multi-tenancy is
+now v1 architecture* — Seam 2 is closed, and a tenant column is required rather than forbidden. *Chat
+egress exists* — but the general webhook prohibition stands, and a configurable destination or payload
+breaks it rather than qualifying it. Everything else on the list is unchanged, including that **Tasks
+inside one Run still execute one at a time**.
+
+**13b. Promoting advisory output into the verified lane.** An advisory Run that finds something fixable
+emits a finding. It does not start a Run to fix it, and there is no edge from the advisory sub-graph
+into `IMPLEMENT`. An agent that can promote its own output across the lane boundary has erased the
+boundary ([01-product/06-lanes.md](../01-product/06-lanes.md)).
+
+**13c. Adding a role that is a prompt variant.** A candidate sharing its lane, States, tool authority,
+tier and artifact kinds with an existing role is a prompt, not a role. Adding it costs a prompt to
+maintain, a tier to tune, golden cases, an adversarial case, an authority-table entry, and a permanent
+obligation to explain how it differs from its neighbour
+([16-agent-role-model.md](../02-architecture/16-agent-role-model.md)). The word "swarm" invites this
+mistake.
 
 **14. Adding a fifth long-running process.** Breaks [NFR-021](../01-product/04-non-functional-requirements.md)
 and the one-operator principle. A contract test catches it, but the design work is already wasted by
