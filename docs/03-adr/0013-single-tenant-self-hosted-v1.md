@@ -1,8 +1,26 @@
 # ADR-0013 — Single-tenant, self-hosted, four processes, one operator
 
-**Status:** Accepted
+**Status:** **Superseded by [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md)**, 2026-09-02.
 **Date:** 2026-08-05
 **Relates to:** NFR-021, NFR-022, [11-infrastructure-and-devops.md](../02-architecture/11-infrastructure-and-devops.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)
+
+> **Superseded in part, and the parts matter.** The founder has decided that both self-hosted and
+> hosted multi-tenant operation are supported, so the tenancy prohibition below — no tenant table, no
+> tenant column, no row-level security — is reversed by
+> [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md). Read this record for the
+> argument, which is retained deliberately, because ADR-0021 accepts every cost named in the negative
+> section below rather than disputing it.
+>
+> **Three things it decided are still in force**, carried forward by ADR-0021 rather than overturned:
+> the process-kind ceiling ([NFR-021](../01-product/04-non-functional-requirements.md), clarified by
+> [ADR-0026](0026-resident-agents-event-ingestion-visible-queues.md)), the eight-alert ceiling
+> ([NFR-022](../01-product/04-non-functional-requirements.md)), and boring infrastructure as a design
+> principle. The one-operator constraint that justified all three is unchanged.
+>
+> **The specific reasoning that survives and constrains its successor:** a nullable tenant column
+> creates the *appearance* of isolation with none of the substance. ADR-0021 does not add a column; it
+> requires the whole enforced boundary — `tenant_id NOT NULL`, in every unique constraint and index,
+> with row-level security — precisely because a half-measure was correctly rejected here.
 
 ## Context
 
