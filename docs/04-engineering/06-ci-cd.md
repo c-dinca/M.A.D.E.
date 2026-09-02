@@ -84,9 +84,27 @@ stored image digest is what keeps an older Run explainable after either has move
 
 ## What CI deliberately does not do
 
-**No automatic deployment to a customer.** They are self-hosted and upgrade on their own schedule
-([ADR-0013](../03-adr/0013-single-tenant-self-hosted-v1.md)). Anything else would be pushing code onto
-someone else's infrastructure without their consent, which is precisely what our own buyers fear.
+**No automatic deployment to a self-hosted customer.** They upgrade on their own schedule
+([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md)). Anything else would be
+pushing code onto someone else's infrastructure without their consent, which is precisely what our own
+buyers fear. Several versions therefore run in the field simultaneously, and every migration must
+tolerate that.
+
+> **A hosted deployment is different, and the difference needs a rule rather than a habit.** We operate
+> it, so continuous deployment to it is possible — and it holds several organisations' source
+> ([18-deployment-and-tenancy.md](../02-architecture/18-deployment-and-tenancy.md)). The gates above are
+> not relaxed for it: **the escape suite, including its cross-tenant, permission-envelope and
+> chat-egress cases, blocks a hosted release exactly as it blocks any other**
+> ([NFR-029](../01-product/04-non-functional-requirements.md),
+> [NFR-035](../01-product/04-non-functional-requirements.md),
+> [NFR-036](../01-product/04-non-functional-requirements.md)).
+>
+> Two consequences worth stating. A migration must still be safe to apply while the previous version
+> runs, because a hosted deploy has the same window. And a deploy interrupts work in flight for every
+> tenant at once, which is acceptable only because Runs park and resume
+> ([NFR-019](../01-product/04-non-functional-requirements.md)) and worksites resume from their own log
+> ([FR-101](../01-product/03-functional-requirements.md)) — a worksite spans weeks, so every upgrade
+> happens *during* one.
 
 **No evaluation on every commit.** Real money and minutes, for a signal that is statistical and does
 not change commit to commit.

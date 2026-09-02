@@ -1,8 +1,22 @@
 # ADR-0016 — Server-rendered run viewer; no single-page application in v1
 
-**Status:** Accepted
+**Status:** **Superseded by [ADR-0028](0028-web-console-as-a-product-surface.md)**, 2026-09-02.
 **Date:** 2026-08-05
 **Relates to:** FR-067, NFR-021, [12-observability-and-slos.md](../02-architecture/12-observability-and-slos.md)
+
+> **Superseded on scope, not on technology.** The founder has asked for a web interface with a worksite
+> monitor, an admin console and an effectiveness dashboard, so this record's premise — that the
+> interface is "an operational surface for one person at a time, not the product" — no longer holds.
+> [ADR-0028](0028-web-console-as-a-product-surface.md) replaces it.
+>
+> **What is retained in full:** the display rules. Verification status renders as *verified*, *failed
+> verification* or *not verified*; a parked Run renders as "waiting for approval" with its reason,
+> never as a spinner; unknown values render as "unknown", never as zero. ADR-0028 extends this list
+> rather than relaxing it.
+>
+> **The technology decision is also retained.** ADR-0028 keeps server-side rendering and keeps this
+> record's rejection of a single-page application, because nothing in the new requirements needs one
+> and the cost argument below is unchanged. The trigger for reopening it is in ADR-0028.
 
 ## Context
 

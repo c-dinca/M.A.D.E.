@@ -9,6 +9,18 @@ The rule, stated once:
 > **A Task is successful when a declared command, executed in a Sandbox, exits zero. Nothing else
 > makes a Task successful. No model output, no heuristic, no operator override.**
 
+> **The rule is unchanged by the 2026-09 vision change, and its *scope* is now explicit.** It governs
+> the **verified lane**. A second lane exists with no oracle at all
+> ([ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md),
+> [01-product/06-lanes.md](../01-product/06-lanes.md)), and the mechanism protecting UF-3 there is not a
+> weaker version of this rule — it is a fence, specified in the section on the lane boundary below.
+>
+> Stating the scope is itself a risk, and it is worth naming: "nothing is successful unless a command
+> exits zero" was the whole claim, and a qualifier in a trust claim is expensive
+> ([ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md), negative consequences). The
+> alternative — leaving the scope implied while shipping work the rule does not cover — is the version
+> that actually breaks UF-3.
+
 ## Why this is the load-bearing property
 
 A system that fails 40% of the time and says so is usable: a reviewer spends their attention on the
@@ -114,6 +126,69 @@ Prohibited, each because it has a specific failure it causes:
   different state from working, and conflating them makes a stalled Run invisible.
 - Defaulting an unknown cost, count or duration to zero. Unknown renders as "unknown".
 
+Added by the vision change, each for the same reason — a claim presented more strongly than what was
+established ([FR-087](../01-product/03-functional-requirements.md),
+[FR-089](../01-product/03-functional-requirements.md),
+[FR-132](../01-product/03-functional-requirements.md),
+[FR-139](../01-product/03-functional-requirements.md)):
+
+- Rendering an advisory finding in the formatting used for a verified result, or describing an advisory
+  Run with any of the three words above.
+- Rendering an `unverified` finding the way a `demonstrated` one is rendered, or omitting a concern in
+  order to avoid the `unverified` label ([FR-149](../01-product/03-functional-requirements.md)).
+  Suppression is a truthfulness failure by omission, not a tidiness improvement.
+- Presenting an evidence record as a verification result, or counting one in a verified acceptance
+  rate.
+- Reporting a worksite's delivered-but-unmerged pull requests as progress
+  ([FR-096](../01-product/03-functional-requirements.md)). Work in flight is review debt the system
+  created, not outcome it produced.
+- Displaying a percentage without the count it was computed from, or displaying 0% where the honest
+  answer is "insufficient data".
+- Publishing a completion estimate for a worksite without the number of observations behind it.
+- Blending a figure across lanes ([FR-094](../01-product/03-functional-requirements.md)).
+- Reporting a request as answered when the chat post failed, or a Run as delivered when the push
+  failed. Same rule, two surfaces.
+- Showing waiting work as nothing at all. A queued item renders its position, age and cause
+  ([FR-117](../01-product/03-functional-requirements.md)).
+
+## The lane boundary
+
+The advisory lane has no oracle, so nothing in it can be verified. What protects UF-3 there is a set of
+fences, each with a test, and the failure they exist to prevent is one sentence: **advisory output
+borrowing the credibility of verified output.**
+
+**The vocabulary is reserved.** *Verified*, *failed verification* and *not verified* describe a
+verification result and nothing else. An advisory Run reports its findings, their evidence state, its
+cost and its terminal reason ([FR-086](../01-product/03-functional-requirements.md)).
+
+**One word is shared deliberately.** A Run whose verification did not run is *not verified*; a finding
+with no evidence is *unverified*. The reader's conclusion is identical — nobody checked — and using a
+softer word for the advisory case would be the credibility transfer itself.
+
+**Evidence is not verification.** An evidence record is produced by the same executor and normalised by
+the same normaliser, and it is deliberately a **distinct table with a distinct event kind**
+([02-data-model.md](02-data-model.md), INV-12). It does not satisfy INV-2, cannot mark a Task
+successful, and cannot appear in a verified acceptance rate
+([FR-092](../01-product/03-functional-requirements.md)).
+
+**Evidence proves the demonstration, not the judgement.** A failing test proves that a test fails.
+Whether the failure matters, whether the behaviour is a bug or a deliberate edge case, and whether
+anything should change are human calls. `demonstrated` is a claim about a command; *verified* is a claim
+about a Task. They are not the same claim, and this is the sentence to hold onto when someone proposes
+describing a demonstrated finding as verified.
+
+**A demonstrated finding can still be wrong, and will look more right than it is.** The reader's trust
+in the exit code may transfer to the judgement wrapped around it. That is a genuine new failure mode
+created by the evidence requirement rather than solved by it
+([ADR-0023](../03-adr/0023-advisory-findings-carry-evidence.md), negative consequences), and the
+mitigation is presentation — a demonstrated finding leads with its command and exit code, so the reader
+sees what was actually established.
+
+**Nothing may be blended.** A single acceptance rate across both lanes is forbidden
+([FR-094](../01-product/03-functional-requirements.md)), for the same reason cost per successful Run and
+cost per failed Run are reported separately: the average of two numbers that mean different things
+hides the one that matters, and it hides it in our favour.
+
 ## Why the Reviewer exists at all, given it cannot decide
 
 The Reviewer catches what an exit code cannot: a change that passes its test while doing something
@@ -125,6 +200,20 @@ Task successful, the system would have a path to success with no execution in it
 depend on model quality. So the Reviewer may route work back or escalate to a human; it may never mark
 success ([FR-042](../01-product/03-functional-requirements.md)). Its findings are attached to the
 branch for the human reviewer, which is where a judgement call belongs.
+
+**The vision change made the Reviewer the only role that spans lanes**, and gave the advisory half
+something the verified half does not have: an obligation to produce evidence
+([ADR-0023](../03-adr/0023-advisory-findings-carry-evidence.md)). That is worth noticing, because it
+partly answers the correlated-errors objection above. A model judging a model is weak evidence; a model
+that writes a test which then fails against a real tree has produced something a second model's opinion
+cannot manufacture. The judgement is still advisory. The demonstration is not.
+
+In `REVIEW` the Reviewer cannot write at all. In `ASSESS` it can write and execute, scoped to the
+evidence workspace by the State's grant
+([05-orchestration-and-termination.md](05-orchestration-and-termination.md)). The same role, different
+authority, decided by the State — which is the clearest illustration in the system of why authority is a
+property of the State rather than of the role
+([16-agent-role-model.md](16-agent-role-model.md)).
 
 ## Injection is an authorisation problem
 
@@ -162,3 +251,11 @@ and that it is visible afterwards in the log. Adversarial golden cases assert th
 | Reviewer verdict typed as advisory | A model marking its own work successful | Routing function signature; [FR-042](../01-product/03-functional-requirements.md) |
 | Three-outcome reporting vocabulary | "Not verified" being rendered as success | [FR-045](../01-product/03-functional-requirements.md), UI test |
 | Double execution for `test` Tasks | Tests that would pass without the change | Task-kind oracle rule above |
+| Reserved vocabulary per lane | An advisory Run described as verified | [FR-086](../01-product/03-functional-requirements.md), [FR-087](../01-product/03-functional-requirements.md); console tests ([NFR-037](../01-product/04-non-functional-requirements.md)) |
+| `evidence_state` as a two-valued check constraint with a foreign key | A finding claiming a demonstration that has no record | INV-11, database-level |
+| Distinct table and event kind for evidence | An evidence record counted as a verification | INV-12, INV-13; nightly query |
+| No `confidence` column, no third lane | A model's opinion becoming a number that gets averaged | Schema; [ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md) |
+| No edge from the advisory sub-graph to `IMPLEMENT` | An agent promoting its own output across the lane boundary | State-machine contract; routing test |
+| Progress measured by a command on the default branch | Activity reported as outcome | [FR-096](../01-product/03-functional-requirements.md); worksite fold ([NFR-041](../01-product/04-non-functional-requirements.md)) |
+| No effectiveness rollup table | A stale flattering figure with no referent | [FR-131](../01-product/03-functional-requirements.md); published queries |
+| Denominator required on every measure | A 100% acceptance rate over two pull requests | [FR-139](../01-product/03-functional-requirements.md); console test |

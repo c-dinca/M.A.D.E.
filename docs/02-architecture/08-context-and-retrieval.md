@@ -94,6 +94,21 @@ per-State authority meaningless. And **`run_verification` takes no arguments**, 
 what "passing" means at verification time
 ([06-verification-and-truthfulness.md](06-verification-and-truthfulness.md)).
 
+**The advisory lane uses the same tools, scoped differently by the State that grants them.** In
+`ASSESS`, `apply_patch` and `run_verification` are bound to the evidence workspace: the agent can write
+a failing test and execute it, and there is no path by which it can touch the branch under review
+([FR-091](../01-product/03-functional-requirements.md),
+[05-orchestration-and-termination.md](05-orchestration-and-termination.md)). No new tool was added for
+the advisory lane, deliberately — a new tool is new authority and needs an ADR
+([16-agent-role-model.md](16-agent-role-model.md)).
+
+Note the one apparent exception to the no-arguments rule: an evidence execution names the command it
+runs, because the agent is *proposing* a demonstration rather than checking a declared oracle. That is
+exactly why an evidence record is not a verification result and lives in a different table with a
+different event kind ([06-verification-and-truthfulness.md](06-verification-and-truthfulness.md)) — an
+agent choosing its own command is precisely what must never happen in the verified lane, and precisely
+what the advisory lane is for.
+
 `read_range` returning an outline instead of content above the line cap is deliberate: an agent that
 asks for a 3,000-line file usually does not know what it wants, and giving it the file both blows the
 budget and reduces accuracy. The outline pushes it to ask a better question.
@@ -208,6 +223,15 @@ rather than asking the model to re-derive it from a transcript it has already mi
 **No cross-Run memory.** A store of "things that worked before" would inject an unlogged influence into
 a Run, which breaks the explainability property of UF-5. Attempt records give most of the benefit
 inside a Run, where they are visible in the audit trail.
+
+> **Restated after the 2026-09 vision change, because two things now look like exceptions and are
+> not.** A **worksite** spans weeks and dozens of cycles, and it carries nothing into a prompt except
+> named artifacts with digests — the cycle's measured count, its slice plan, its outcome
+> ([01-product/07-worksites.md](../01-product/07-worksites.md)). A **request** carries its clarification
+> history, which is bounded, recorded and its own event log. Neither is a store of conclusions, and
+> neither may become one. Nothing an agent concluded in one Run reaches another Run
+> ([FR-121](../01-product/03-functional-requirements.md), Seam 7 in
+> [15-future-phase-seams.md](15-future-phase-seams.md)).
 
 **No automatic context expansion on failure.** Giving the model more material after it fails is the
 reflex to resist: it raises cost, lowers precision, and usually the problem was that the model looked

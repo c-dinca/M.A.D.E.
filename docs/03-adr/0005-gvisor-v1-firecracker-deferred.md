@@ -4,6 +4,26 @@
 **Date:** 2026-08-05
 **Relates to:** UF-1, [04-execution-isolation.md](../02-architecture/04-execution-isolation.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)
 
+> **This decision's revisit trigger has fired, and the decision is therefore open.** The trigger below
+> names "the deployment becomes multi-tenant or hosted by us
+> ([ADR-0013](0013-single-tenant-self-hosted-v1.md) reversed)".
+> [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md) reversed ADR-0013 on 2026-09-02,
+> so the condition is met.
+>
+> **Status is unchanged — Accepted — because a fired trigger reopens a question, it does not answer
+> one.** The question is **OQ-10**: whether a user-space kernel is sufficient when the same boundary
+> separates customers from each other rather than a customer's code from its own host
+> ([02-architecture/18-deployment-and-tenancy.md](../02-architecture/18-deployment-and-tenancy.md)).
+> The negative section below already says a Sentry vulnerability is a host compromise; under hosted
+> multi-tenancy that is every tenant on the host.
+>
+> Read this record's costs before answering OQ-10. Nothing here is relaxed by the vision change, and
+> the direction of travel is toward a stronger boundary — if it is insufficient, hosted operation is
+> suspended rather than the boundary weakened
+> ([ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md), revisit trigger). This record
+> is noted rather than superseded because it correctly anticipated the condition; the specification
+> should get credit for that rather than have it quietly overwritten.
+
 ## Context
 
 Model-generated code must execute somewhere, and the product's central claim is that this is safe

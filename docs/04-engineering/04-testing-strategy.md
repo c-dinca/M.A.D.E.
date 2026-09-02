@@ -10,16 +10,32 @@ whole category of behaviour is deliberately not tested for correctness at all.
 
 | Suite | Share of effort | Runs | Covers |
 | --- | --- | --- | --- |
-| `unit` | ~35% | Every commit | Guards, routing, normaliser, patch parser, prompt assembler, schemas |
-| `contract` | ~10% | Every commit | Schemas parse and match implementations; OpenAPI conformance; state-machine consistency |
-| `replay` | ~10% | Every commit | Event-fold determinism, crash recovery matrix |
-| `integration` | ~20% | Every commit (fast subset), full on merge | Real Postgres, real Sandbox, end-to-end Runs |
-| **`escape`** | **~15%** | **Every commit; full nightly** | **The isolation boundary** |
-| `eval` | ~10% | Nightly and on demand | Outcome quality, cost, escalation, injection resistance |
+| `unit` | ~35% | Every commit | Guards, routing, campaign oracle, normaliser, patch parser, prompt assembler, entitlement check, schemas |
+| `contract` | ~10% | Every commit | Schemas parse and match implementations; OpenAPI conformance; state-machine consistency; topology; import boundaries |
+| `replay` | ~10% | Every commit | Event-fold determinism for **all three** event logs, crash recovery matrix |
+| `integration` | ~20% | Every commit (fast subset), full on merge | Real Postgres, real Sandbox, end-to-end Runs, worksite cycles, request brokering, console rendering |
+| **`escape`** | **~15%** | **Every commit; full nightly** | **Every boundary whose failure is a disclosure**: the Sandbox, tenancy, the permission envelope, chat egress |
+| `eval` | ~10% | Nightly and on demand | Outcome quality, cost, escalation, injection resistance, advisory evidence states, triage declines |
 
-`escape` at 15% of testing effort for what is architecturally one module is the clearest signal of the
-risk profile. It is justified by UF-1: it is the only suite whose failure stops the product rather
-than a build.
+`escape` at 15% of testing effort is the clearest signal of the risk profile. It is justified by UF-1
+and UF-4: it is the only suite whose failure stops the product rather than a build.
+
+> **The 2026-09 vision change widened `escape` rather than adding a suite**, and the reason is a
+> deliberate judgement about which failures belong there. Three new boundaries — cross-tenant
+> reachability, the repository permission envelope, and the chat posting allowlist — share the property
+> that made the escape suite what it is: **their failure returns a plausible answer rather than an
+> error.** A missing tenant predicate returns rows. An over-wide git grant succeeds. A leaked source
+> fragment in a chat message posts fine. None of them fails a functional test, which is exactly why
+> they need a hostile suite rather than a happy-path one
+> ([NFR-029](../01-product/04-non-functional-requirements.md),
+> [NFR-035](../01-product/04-non-functional-requirements.md),
+> [NFR-036](../01-product/04-non-functional-requirements.md)).
+>
+> The honest cost of not adding a fifth suite: `escape` is now doing two jobs — proving the execution
+> boundary and proving the authorisation boundaries — and the second is not what the name suggests. That
+> was accepted over a new suite with its own gate and its own maintenance, because the rules that make
+> the suite meaningful (real runtime, 100% pass, no quarantine, a case per incident) are exactly the
+> rules the new boundaries need.
 
 ## The suites that carry disproportionate weight
 
@@ -40,6 +56,24 @@ cannot copy ([00-context/04-business-model.md](../00-context/04-business-model.m
 
 **It gates provider changes.** Swapping the isolation runtime (Seam 1) is accepted by this suite
 unchanged, which is the test that the provider abstraction did not leak.
+
+**One case per prohibition, for the boundaries that are lists.** The permission envelope
+([FR-123](../01-product/03-functional-requirements.md)) is nine prohibitions, and it gets nine cases,
+each asserting that the attempt fails **inside our code** and never reaches the host — because a
+prohibition enforced only by the host's grant is a prohibition we cannot honestly claim
+([19-repository-access.md](../02-architecture/19-repository-access.md)).
+
+**A seeded corpus for every redaction-shaped boundary.** Credentials
+([NFR-008](../01-product/04-non-functional-requirements.md)), cross-tenant access
+([NFR-029](../01-product/04-non-functional-requirements.md)) and chat egress
+([NFR-036](../01-product/04-non-functional-requirements.md)) all work the same way: plant the values
+that must not appear, exercise every path, assert none of them surfaced. A corpus is testable; a
+prohibition described in prose is not.
+
+**Tenancy cases run with row-level security active.** A cross-tenant test that passes because the
+application filtered correctly proves the application, not the boundary. The point of row-level security
+is that it holds when the application forgets, so the suite must exercise it that way — including a
+deliberately predicate-less query asserting the database refuses it.
 
 ### Replay suite — the audit and recovery claim
 
@@ -67,11 +101,17 @@ its floor fails CI.
 | Area | Floor | Reason |
 | --- | --- | --- |
 | `orchestrator/guards.py`, `orchestrator/routing.py` | 100% branch | Pure functions with no dependencies; anything below 100% is laziness, and these decide termination |
-| `context/normalise.py` | 100% branch | The progress oracle and the prompt both depend on it ([ADR-0010](../03-adr/0010-termination-guards.md)) |
+| `worksites/oracle.py` | 100% branch | The same argument one level up: a pure predicate that decides whether a campaign continues ([FR-098](../01-product/03-functional-requirements.md)) |
+| `requests/entitlements.py` | 100% branch | The only thing between a channel guest and a spend ([FR-107](../01-product/03-functional-requirements.md)) |
+| `git/` permission-envelope enforcement | 100% branch | Nine prohibitions, nine tests; a partially covered boundary is a boundary we cannot claim ([NFR-035](../01-product/04-non-functional-requirements.md)) |
+| `chat/` posting allowlist | 100% branch | The one place C2 could leave the perimeter into a third party ([NFR-036](../01-product/04-non-functional-requirements.md)) |
+| `context/normalise.py` | 100% branch | The progress oracle, the prompt and evidence records all depend on it ([ADR-0010](../03-adr/0010-termination-guards.md)) |
 | `tools/apply_patch.py` and the patch policy validator | 100% branch | Silent corruption and privilege escalation both live here |
 | `llm/client.py` admission and metering paths | 95% | [NFR-009](../01-product/04-non-functional-requirements.md) has no error budget |
+| `store/` tenant-scoping paths | 95% | A missing predicate is a disclosure, not a wrong answer ([NFR-029](../01-product/04-non-functional-requirements.md)) |
 | `sandbox/` | 90% plus the escape suite | Coverage is secondary to the escape suite here |
 | `store/` | 90% | Transaction boundaries are the audit guarantee |
+| `effectiveness/` | 90% | These queries produce the numbers the kill criteria are gated on ([FR-131](../01-product/03-functional-requirements.md)) |
 | `api/` | 80% | Contract tests carry more weight than line coverage |
 | `agents/` | 60% | Mostly prompt assembly and schema handling; the eval suite is the real measure |
 | Overall | 85% | |
@@ -95,6 +135,18 @@ has a passing baseline and a Dockerfile so `iac` Tasks are exercisable. The adve
 contains prompt-injection text in a README, a test docstring and a comment — that content is the test
 and must not be tidied.
 
+Added by the vision change, and each has the same property as the adversarial repository — **the
+awkward part is the test**:
+
+| Fixture | Contains | Must not be tidied because |
+| --- | --- | --- |
+| A repository with a real defect and a passing suite | A bug no existing test catches | It is the only way to exercise the evidence path: the agent must write the failing test |
+| A pull request with **no** defect | Nothing wrong | A clean pull request must produce no invented finding, and this is the case that catches a model rewarded for finding things |
+| A concern with no executable form | A misleading name, a design smell | It must produce an `unverified` finding rather than silence ([FR-149](../01-product/03-functional-requirements.md)) |
+| A repository large enough to slice | Many files under one prefix | A worksite cycle needs more slices than its open-pull-request ceiling to exercise the ceiling at all |
+| Chat messages: matching, unmatchable, ambiguous, and injection-bearing | Text designed to defeat triage | Declines are the correct outcome for three of the four, and the reason codes are what OQ-19 is measured with |
+| Several synthetic tenants with colliding identifiers | The same branch names, the same digests, the same class names in two tenants | A unique index missing its tenant column surfaces as a mysterious constraint violation, not as a tenancy bug ([02-data-model.md](../02-architecture/02-data-model.md)) |
+
 No customer data, ever ([01-repo-structure.md](01-repo-structure.md)).
 
 Model calls in `unit`, `contract`, `replay` and most `integration` tests use a fake provider returning
@@ -112,10 +164,26 @@ will be deleted within a month.
 **Third-party behaviour.** No tests that a provider's API works, that Postgres commits, or that git
 pushes. Test our handling of their failures instead — that is what the degraded-mode tests do.
 
-**The run viewer's appearance.** Its *truthfulness rules* are tested — verification wording, parked
-Runs not shown as in progress, unknown not rendered as zero
-([06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md)) —
-because those are product requirements. Layout is not.
+**The console's appearance.** Its *truthfulness rules* are tested and the list is longer than it was:
+verification wording, parked Runs not shown as in progress, unknown not rendered as zero, the lane
+visible before the content, `demonstrated` rendered differently from `unverified`, work in flight not
+rendered as progress, "insufficient data" rather than a percentage over too few observations, and a
+queued item showing its position and cause
+([FR-132](../01-product/03-functional-requirements.md),
+[NFR-037](../01-product/04-non-functional-requirements.md)). Layout is not tested.
+
+**Whether an advisory finding was worth making.** The `advisory` eval tier asserts mechanical properties
+— that the evidence state matches what was produced, that nothing was suppressed, that a clean pull
+request yields no invented finding. Whether a finding is *useful* requires human acceptance over time
+([NFR-031](../01-product/04-non-functional-requirements.md), `TBD`). That is a property of work with no
+oracle rather than a gap in the harness, and asserting it in a test would be inventing the judgement the
+lane exists to defer to a human
+([ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md)).
+
+**Whether a worksite's slice decomposition is good.** The suite can assert that a cycle measures, plans,
+enqueues and respects its ceilings. Whether the slices are independently mergeable is discovered on a
+real repository with a real reviewer, and it is recorded as a load-bearing unproven claim rather than
+tested ([00-context/05-evidence-and-confidence.md](../00-context/05-evidence-and-confidence.md)).
 
 **Performance in unit tests.** Budgets are measured in dedicated benchmarks
 ([NFR-001](../01-product/04-non-functional-requirements.md),

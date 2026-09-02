@@ -24,8 +24,25 @@ the volume workhorse on the tier where a local endpoint can plausibly serve it. 
 per Project, which makes cost a dial the operator can turn without touching code.
 
 **There is no built-in default model.** The system refuses to start if a tier is unconfigured
-([FR-046](../01-product/03-functional-requirements.md)). A default would be wrong for an air-gapped
-customer, would silently bind us to a vendor, and would produce a surprise bill on first run.
+([FR-046](../01-product/03-functional-requirements.md)). A default would silently bind us to a vendor
+and would produce a surprise bill on first run.
+
+> **The 2026-09 vision change puts pressure on this, and the pressure should be visible.** One of the
+> two original reasons for the rule was that a default "would be wrong for an air-gapped customer", and
+> air-gapped operation has moved to deferred scope
+> ([01-product/10-deferred-scope.md](../01-product/10-deferred-scope.md)). More directly: a **hosted**
+> deployment where every tenant must supply their own model endpoint is a strange product, and a hosted
+> deployment that supplies one has a built-in default by another name.
+>
+> **The rule is unchanged and the question is recorded rather than answered** as **OQ-14**. The
+> surviving reason is sufficient on its own: a system that starts with a model nobody chose spends
+> money nobody authorised, which is [UF-2](01-system-overview.md#the-five-unforgivable-failures) at
+> startup.
+>
+> **Note what is already settled and is not part of OQ-14.** Pluggability is decided
+> ([ADR-0012](../03-adr/0012-model-tiers-and-provider-abstraction.md)): calling code names a tier, one
+> OpenAI-compatible adapter serves hosted and local endpoints, and **a customer's own model endpoint is
+> supported by construction**. The open part is narrower and commercial.
 
 ## Provider abstraction
 
@@ -104,9 +121,21 @@ committed expected outcome, organised in tiers:
 | `ambiguous` | Requests missing a decision the Architect cannot infer | Escalation rather than guessing ([FR-029](../01-product/03-functional-requirements.md)) |
 | `unsatisfiable` | Requests that cannot be met | Termination within the cap and under a fraction of the ceiling ([NFR-012](../01-product/04-non-functional-requirements.md)) |
 | `adversarial` | Repositories containing prompt-injection text in READMEs, test docstrings and comments | No tool call outside the State's authority ([NFR-028](../01-product/04-non-functional-requirements.md)) |
+| `advisory` | Pull requests with known defects, and pull requests with **no** defect | That a finding's recorded `evidence_state` matches whether an evidence record was produced; that no finding is emitted with neither evidence nor a label; and that a clean pull request produces no fabricated finding ([FR-148](../01-product/03-functional-requirements.md), [FR-149](../01-product/03-functional-requirements.md)) |
+| `chat_triage` | Messages that map cleanly to a class, messages that map to no class, ambiguous messages, and messages containing injection text | That an unmatched message is declined with the correct reason rather than brokered; that ambiguity is declined rather than inferred; that the clarification allowance is never exceeded; and that no request is created outside the requester's entitlement ([FR-108](../01-product/03-functional-requirements.md), [FR-111](../01-product/03-functional-requirements.md)) |
 
-The last two tiers are the ones that distinguish this product, so they are not an afterthought:
-`unsatisfiable` measures the honest-failure loop and `adversarial` measures the authority model.
+The tiers that distinguish this product are not an afterthought: `unsatisfiable` measures the
+honest-failure loop, `adversarial` measures the authority model, and the two added by the vision change
+measure the two new places the system can lie.
+
+**What the `advisory` tier can and cannot measure is worth stating plainly.** It can assert mechanical
+properties: that the evidence state matches reality, that nothing was suppressed, that a clean pull
+request produces no invented finding. It **cannot** assert that a finding was worth making. That
+requires human acceptance over time
+([NFR-031](../01-product/04-non-functional-requirements.md), `TBD`), which is a property of work with no
+oracle rather than a gap in the harness
+([ADR-0022](../03-adr/0022-two-lanes-verified-and-advisory.md)). The harness measures the floor; the
+dashboard measures the value.
 
 **Measures.** Per configuration: pass rate by tier, mean and p95 cost per Run, mean Attempts per Task,
 escalation rate, p95 duration, cached-token ratio, and count of authority violations (which must be
@@ -126,6 +155,18 @@ commit; per-commit CI runs the fast deterministic suites only
 ([04-engineering/06-ci-cd.md](../04-engineering/06-ci-cd.md)).
 
 ## Model selection
+
+> **Open question OQ-14** — Whether a **hosted** deployment offers a managed model endpoint as its
+> default, and if so how [FR-046](../01-product/03-functional-requirements.md)'s no-default-model rule
+> is honoured. Requiring every hosted tenant to supply their own endpoint is a strange product;
+> supplying one is a built-in default by another name, and it makes model cost our cost rather than
+> theirs ([00-context/04-business-model.md](../00-context/04-business-model.md)). A third option exists
+> and is not chosen here: a per-tenant configured endpoint that we operate but that the tenant must
+> explicitly select, which honours the rule in letter and in spirit but is a configuration step at
+> signup. **Blocks:** the hosted onboarding flow, the shape of the tenant configuration record, and the
+> hosted margin model. Does **not** block anything self-hosted, and does not reopen pluggability, which
+> [ADR-0012](../03-adr/0012-model-tiers-and-provider-abstraction.md) settled. **Resolved by:** the
+> founder deciding, after OQ-01.
 
 > **Open question OQ-05** — Which concrete model and endpoint each tier uses, and at what price. The
 > intake proposes specific hosted and local models; those figures are recorded as unverified in

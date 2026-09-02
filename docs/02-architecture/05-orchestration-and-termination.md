@@ -11,6 +11,14 @@ The governing rule:
 Everything else here follows from that sentence. It is the difference between a system whose
 termination is a property and one whose termination is a hope.
 
+> **Extended by the 2026-09 vision change, in three places.** An `ASSESS` State carries the advisory
+> lane. A **worksite** is a loop *above* every guard here and gets its own bounds
+> ([01-product/07-worksites.md](../01-product/07-worksites.md)). And a Run is now created by four
+> different triggers rather than one, so admission happens before the graph rather than inside it
+> ([17-persistence-and-concurrency.md](17-persistence-and-concurrency.md)). The governing rule and all
+> six guards are unchanged; the purity requirement is unchanged and **harder to honour**, because
+> schedules, queue ages and worksite cycles are all new time-bearing mechanisms.
+
 ## Why a framework at all, and where its authority stops
 
 LangGraph executes the graph, persists checkpoints and provides the interrupt primitive that makes a
@@ -34,6 +42,13 @@ A router that reads the clock is the specific bug to watch for. TTL expiry is no
 router — it is delivered as an event by the driver, and the router reacts to the event. A router that
 calls `datetime.now()` produces a different decision on replay than it did in production, which
 silently destroys [NFR-016](../01-product/04-non-functional-requirements.md).
+
+**The vision change added four more places to make that mistake**, which is why it is restated here
+rather than assumed learned. A schedule window becoming due, a queue item's age exceeding a threshold,
+a worksite cycle becoming due, and a request's clarification TTL expiring are all time-bearing. In
+every case the **driver** evaluates time and delivers an event; the predicate reacts to the event. A
+guard that computes "is this window due" is a guard that decides differently on replay, and there are
+now five of these rather than one.
 
 ## States
 
@@ -84,9 +99,53 @@ stateDiagram-v2
 
 `AWAIT_HUMAN` carries a `reason` and a `resume_to` State rather than being split into several waiting
 states. One durable waiting state with structured metadata keeps the graph small enough to reason
-about, and the reason code is what the viewer and the approval API branch on. Valid reasons:
+about, and the reason code is what the console and the approval API branch on. Valid reasons:
 `plan_approval`, `delivery_approval`, `ambiguous_request`, `task_failed`, `budget_exhausted`,
 `cycle_detected`, `integration_failed`, `provider_unavailable`, `delivery_failed`, `policy_violation`.
+
+Added by the vision change: `access_insufficient` and `access_revoked`
+([FR-125](../01-product/03-functional-requirements.md),
+[FR-126](../01-product/03-functional-requirements.md)) — a permission failure is a statement about
+authority, so it parks rather than retrying; and `claim_blocked`, for a slice Run whose worksite lost
+its claim mid-flight.
+
+### The advisory lane: `ASSESS`
+
+An advisory Run occupies a different sub-graph and it is deliberately shorter. There is no `VERIFY`,
+because there is nothing to verify; there is no `INTEGRATE`, because nothing is delivered to a branch.
+
+```mermaid
+stateDiagram-v2
+    [*] --> INTAKE
+    INTAKE --> ASSESS : validated, budget admitted, lane = advisory
+    INTAKE --> REJECTED : invalid, over budget, not entitled, or policy
+
+    ASSESS --> ASSESS_DONE : findings emitted, each demonstrated or unverified
+    ASSESS --> AWAIT_HUMAN : attempt cap, budget, or cycle detected
+    ASSESS --> TASK_FAILED : the target could not be read
+
+    ASSESS_DONE --> DONE : findings delivered as comments
+    ASSESS_DONE --> AWAIT_HUMAN : delivery failed
+```
+
+Three properties of `ASSESS` matter more than its shape.
+
+**Its write authority is scoped to the evidence workspace by the State's grant**, not by instruction.
+The toolbelt factory hands it `apply_patch` and `run_verification` bound to that workspace; there is no
+path by which it can construct a tool that touches the reviewed branch
+([FR-091](../01-product/03-functional-requirements.md),
+[FR-069](../01-product/03-functional-requirements.md)).
+
+**An evidence execution is not a verification.** It uses the same executor and the same normaliser, and
+it emits a **distinct event kind** into a **distinct table**, so no query and no guard can mistake one
+for the other ([FR-092](../01-product/03-functional-requirements.md), INV-12).
+
+**`DONE` here does not mean verified.** It means the findings were delivered. An advisory Run is never
+reported as *verified*, *failed verification* or *not verified*
+([FR-086](../01-product/03-functional-requirements.md)), which is why the terminal State's name is
+load-bearing and the reporting vocabulary is separate from it
+([00-context/03-glossary.md](../00-context/03-glossary.md), banned synonyms: "done, complete, success
+as a state").
 
 ## Transition table
 
@@ -107,7 +166,9 @@ what a State can do ([06-verification-and-truthfulness.md](06-verification-and-t
 | `TASK_DONE` | system | none | — | — |
 | `TASK_FAILED` | system | none | — | always `AWAIT_HUMAN(task_failed)` |
 | `INTEGRATE` | system | `run_verification` (full suite), git via broker | Full suite exit 0 and delivery approved | `AWAIT_HUMAN(integration_failed)` |
-| `AWAIT_HUMAN` | human | none | A recorded approval | `ABORTED` on TTL |
+| `AWAIT_HUMAN` | human | none | A recorded approval **from a principal the approval policy permits for that scope, lane and class** ([FR-135](../01-product/03-functional-requirements.md)) | `ABORTED` on TTL |
+| `ASSESS` | Reviewer, advisory lane | read-only set, plus `apply_patch` and `run_verification` **scoped to the evidence workspace** | Findings emitted, each with an `evidence_state` | `TASK_FAILED`, or `AWAIT_HUMAN` on a guard trip |
+| `ASSESS_DONE` | system | git via broker (comments only) | Findings delivered | `AWAIT_HUMAN(delivery_failed)` |
 
 Two transitions apply from **every** non-terminal State and are recorded in the contract as global
 rather than drawn on the diagram, which would otherwise be unreadable: operator cancellation
@@ -177,6 +238,31 @@ loops that span states, which per-State attempt caps cannot see.
 Pre-flight admission against Task, Run and deployment ceilings, using a tokeniser-measured estimate of
 the assembled prompt plus the maximum output tokens. Specified in
 [07-cost-control.md](07-cost-control.md). Denial is a transition, never an exception.
+
+### The worksite's bounds, one level up
+
+A worksite creates Runs, so it sits above all six guards. Its bounds are the same idea applied at the
+campaign level and they are specified in
+[01-product/07-worksites.md](../01-product/07-worksites.md) and
+[ADR-0024](../03-adr/0024-worksites-as-long-running-campaigns.md):
+
+**Four declared ceilings** — total spend, total Runs, wall-clock duration, maximum concurrently open
+pull requests — none raisable while the worksite is active
+([FR-097](../01-product/03-functional-requirements.md)).
+
+**A campaign progress oracle** that pauses the worksite if the measured remaining count has not fallen
+across a declared number of consecutive cycles
+([FR-098](../01-product/03-functional-requirements.md)). It is the direct analogue of `GUARD_PROGRESS`
+and it exists for the identical reason: ceilings alone permit an expensive campaign that achieves
+nothing, exactly as attempt caps alone permit three identical expensive failures.
+
+It reads **only** `worksite_cycle` ([02-data-model.md](02-data-model.md)), for the same reason
+`GUARD_PROGRESS` reads only `attempts`: a guard with one input is testable in isolation.
+
+**These are the newest and least-tested bounds in the system**, and they sit above the most expensive
+loop. That combination is stated in
+[ADR-0024](../03-adr/0024-worksites-as-long-running-campaigns.md)'s negative consequences and is worth
+carrying: every per-Run guard here has been reasoned about at length, and these have not.
 
 ### GUARD_PATCH_POLICY
 Rejects patches touching paths outside the workspace after symlink resolution, exceeding the size cap,
@@ -267,4 +353,30 @@ model that can add a node can add a loop.
 
 **No "just one more attempt" affordance.** There is no operator override that raises a cap mid-Run.
 Raising the cap means editing the Project configuration, which is versioned and recorded, and then
-starting a new Run. An override would appear in the audit log as an unexplainable extra attempt.
+starting a new Run. An override would appear in the audit log as an unexplainable extra attempt. The
+same rule now applies to a worksite: no ceiling may be raised while it is active
+([FR-097](../01-product/03-functional-requirements.md)).
+
+**No lane crossing.** An `ASSESS` Run does not transition into `IMPLEMENT`, and there is no edge from
+the advisory sub-graph into the verified one. An advisory Run that finds something fixable emits a
+finding; a human, or a declared class a human triggered, does the fixing. An agent that can promote its
+own output across the lane boundary has erased the boundary
+([01-product/06-lanes.md](../01-product/06-lanes.md)).
+
+**No automatic resumption of a paused worksite.** Every route into `PAUSED` other than a human is a
+signal that something needs deciding, so leaving it requires a recorded human decision
+([FR-103](../01-product/03-functional-requirements.md)). A worksite that resumed itself after a ceiling
+breach would have no ceiling.
+
+**No unbounded clarification.** The request lifecycle's `CLARIFYING → TRIAGED` loop is the only loop in
+any lifecycle here, and it is bounded by a declared question count and a TTL held in a row
+([FR-109](../01-product/03-functional-requirements.md)) — a counter, not a hope about convergence. An
+open-ended dialogue is an unbounded spend and an unbounded latency.
+
+**No backfill.** A missed schedule window is a recorded skip, never a burst of catch-up Runs
+([FR-118](../01-product/03-functional-requirements.md)). Backfilling is how a schedule becomes a spend
+spike at exactly the moment nobody is watching.
+
+**No merge-conflict resolution.** A slice that cannot be delivered cleanly escalates. Automatic
+resolution is where a system starts producing changes nobody authored
+([17-persistence-and-concurrency.md](17-persistence-and-concurrency.md)).

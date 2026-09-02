@@ -20,14 +20,38 @@ one decision, the alternative it beat, and the price paid.
 | [0010](0010-termination-guards.md) | Six layered termination guards, including a progress oracle | Accepted |
 | [0011](0011-durable-human-approval-gates.md) | Human approval is a durable state, and delivery approval is mandatory | Accepted |
 | [0012](0012-model-tiers-and-provider-abstraction.md) | Capability tiers with an OpenAI-compatible adapter; no default model | Accepted |
-| [0013](0013-single-tenant-self-hosted-v1.md) | Single-tenant, self-hosted, four processes, one operator | Accepted |
+| [0013](0013-single-tenant-self-hosted-v1.md) | Single-tenant, self-hosted, four processes, one operator | **Superseded by ADR-0021** |
 | [0014](0014-verification-oracle-is-authoritative.md) | The verification exit code is the sole definition of Task success | Accepted |
 | [0015](0015-credential-brokering-no-secrets-in-sandbox.md) | Sandboxes hold no credentials; git writes happen control-plane side | Accepted |
-| [0016](0016-server-rendered-run-viewer.md) | Server-rendered run viewer; no single-page application in v1 | Accepted |
+| [0016](0016-server-rendered-run-viewer.md) | Server-rendered run viewer; no single-page application in v1 | **Superseded by ADR-0028** |
 | [0017](0017-content-addressed-artifact-store.md) | Artifacts are content-addressed in an object store, not blobs in Postgres | Accepted |
 | [0018](0018-spec-as-contract-and-spec-lint.md) | Contracts are normative and enforced by a spec-lint CI gate | Accepted |
 | [0019](0019-specification-first-projects.md) | Specification-first Projects: a generated specification bundle as a Run's first output | **Withdrawn by ADR-0020** |
 | [0020](0020-technical-debt-remediation-as-the-v1-product.md) | Technical-debt remediation on existing repositories is the v1 product; work classes replace generated planning | Accepted |
+| [0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md) | One deployment-agnostic core serving both self-hosted and hosted multi-tenant operation | Accepted |
+| [0022](0022-two-lanes-verified-and-advisory.md) | Work is separated into a verified lane and an advisory lane, and both ship in v1 | Accepted |
+| [0023](0023-advisory-findings-carry-evidence.md) | An advisory finding carries executable evidence or is marked unverified | Accepted |
+| [0024](0024-worksites-as-long-running-campaigns.md) | A worksite is a bounded long-running campaign measuring progress on merged state | Accepted |
+| [0025](0025-chat-front-door-request-broker.md) | A chat request is brokered into an entitled work class or declined | Accepted |
+| [0026](0026-resident-agents-event-ingestion-visible-queues.md) | Residency is a control-plane property: durable ingestion and visible queues, not immortal agents | Accepted |
+| [0027](0027-scoped-application-identity-branches-only.md) | The system authenticates as its own scoped application installation; branches and pull requests only | Accepted |
+| [0028](0028-web-console-as-a-product-surface.md) | The web console is a product surface with an effectiveness dashboard; rendering stays server-side | Accepted |
+
+## The 2026-09 vision change
+
+ADR-0021 through ADR-0028 were written together, in one revision, after the founder substantially
+changed the product vision. They are not independent: reading any one of them without
+[ADR-0022](0022-two-lanes-verified-and-advisory.md) (the lane split) and
+[ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md) (deployment shape) will give a
+misleading picture, because those two are what the others assume. What changed, what was reversed and
+what is now open is recorded in
+[00-context/06-vision-change-2026-09.md](../00-context/06-vision-change-2026-09.md).
+
+Two earlier decisions were superseded and none was deleted: ADR-0013 (tenancy reversed, process and
+alert ceilings retained) and ADR-0016 (interface scope widened, display rules and rendering technology
+retained). [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md) survives and is
+**narrowed rather than replaced**: the verified lane is still exactly what it describes, and generated
+planning is still deferred — see OQ-19.
 
 ## Rules for writing one
 
