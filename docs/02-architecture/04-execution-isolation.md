@@ -10,12 +10,27 @@ description, a poisoned dependency, a README in the target repository, or a cust
 themselves the adversary. The design must hold when the agent is hostile, because from the host's
 point of view there is no way to tell.
 
+> **The stakes changed in 2026-09 and the boundary did not.** Hosted multi-tenant operation
+> ([ADR-0021](../03-adr/0021-deployment-agnostic-core-hosted-and-self-hosted.md)) makes an escape a
+> **cross-tenant breach** rather than a single-customer incident, so the same boundary that separated a
+> customer's code from its own host now separates customers from each other. Whether it is sufficient
+> for that is **OQ-10**, and it is open in the direction of a *stronger* boundary
+> ([18-deployment-and-tenancy.md](18-deployment-and-tenancy.md)). Nothing in this document has been
+> relaxed, and the one direction this project does not trade is weakening it to make hosting
+> affordable: if the boundary is insufficient, hosted operation is suspended.
+>
+> Two other additions: the advisory lane now executes inside a Sandbox in order to produce evidence
+> ([ADR-0023](../03-adr/0023-advisory-findings-carry-evidence.md)), so it is subject to everything here
+> rather than exempt from it; and a Sandbox serving one Run means it serves one tenant, which makes an
+> existing property load-bearing for a new reason.
+
 ## The boundary
 
 v1 executes all model-generated code under **gVisor (`runsc`)**, an OCI runtime that interposes a
 user-space kernel between the workload and the host kernel
 ([ADR-0005](../03-adr/0005-gvisor-v1-firecracker-deferred.md)). Firecracker microVMs are the
-intended v2 boundary and the provider interface exists so that swap is additive rather than a rewrite.
+intended next boundary and the provider interface exists so that swap is additive rather than a
+rewrite.
 
 Being explicit about what this buys and what it does not, because overstating it is how a security
 claim becomes a liability: a workload under `runsc` does not issue syscalls to the host kernel
@@ -44,7 +59,15 @@ Rules, enforced in code and asserted by tests rather than documented as guidance
 - Nothing in Z2 initiates a connection to Z0. All communication is Z0 → Z2 through the provider.
 - No host path is bind-mounted into Z2 ([NFR-003](../01-product/04-non-functional-requirements.md)).
 - One Sandbox serves one Run and is destroyed. Never reused, never shared, never resumed into a
-  different Run.
+  different Run. **Therefore one Sandbox serves one tenant** — the property was always there and now
+  carries tenant separation as well as Run hygiene
+  ([18-deployment-and-tenancy.md](18-deployment-and-tenancy.md)).
+- **An evidence workspace is a Sandbox and obeys every rule above.** An advisory Run writing a failing
+  test gets the same boundary, the same limits and the same no-network verification as a verified Run
+  ([FR-091](../01-product/03-functional-requirements.md),
+  [FR-093](../01-product/03-functional-requirements.md)). There is no lighter mode for advisory work,
+  and the previous assumption that review is a read-only capability with no sandbox is retired
+  ([01-product/05-work-classes.md](../01-product/05-work-classes.md)).
 
 ## Layered controls
 
@@ -162,8 +185,10 @@ It is a v2 item in [15-future-phase-seams.md](15-future-phase-seams.md).
 | Reach cloud metadata | No network; also no route at host level | None while network is disabled; returns as a risk if a future workload needs egress |
 | Persist across Runs | Writable layer discarded, one Sandbox per Run | Image tampering, mitigated by digest pinning |
 | Escape through a file path | Host-side symlink-resolved path validation | Validation bug — hence the traversal cases in the escape suite |
-| Exhaust the host | cgroup CPU, memory, PID and disk caps, plus timeouts | Host-level disk pressure from many concurrent Runs; bounded by the concurrency cap |
+| Exhaust the host | cgroup CPU, memory, PID and disk caps, plus timeouts | Host-level disk pressure from many concurrent Runs; bounded by the concurrency cap at four levels ([FR-119](../01-product/03-functional-requirements.md)) |
 | Attack the control plane | No Z2 → Z0 route; provider is one-way | A vulnerability in the provider's response parsing — treat provider output as untrusted input |
+| **Reach another tenant's workspace or artifacts** | One Sandbox per Run; no Z2 → Z0 route; tenant-prefixed object store; no cross-tenant digest resolution ([FR-144](../01-product/03-functional-requirements.md)) | **A Sentry vulnerability now compromises every tenant on that host, not one customer.** This is the residual risk OQ-10 exists to resolve, and it is why hosted operation may require Seam 1 first |
+| **Escape from an evidence workspace** | Identical boundary; the advisory toolbelt's write authority is scoped to the workspace by the State's grant, not by instruction | Same as any Run. Worth listing because the advisory lane was previously assumed to need no sandbox at all |
 
 ## Escape test suite
 
@@ -190,6 +215,10 @@ incident. Required cases:
 | Persistence | Write a cron entry and a systemd unit, destroy, re-create | Fresh Sandbox has no trace |
 | Cross-Run residue | Run A writes a marker, destroy; Run B searches for it | Not found |
 | Argv injection | Filename containing shell metacharacters passed to `exec` | Executed literally; no shell interpretation |
+| **Cross-tenant residue** | Tenant A's Run writes a marker; tenant B's Run searches every reachable path and the object store by digest | Not found; no digest from another tenant resolves ([NFR-029](../01-product/04-non-functional-requirements.md)) |
+| **Evidence workspace scope** | An advisory Run attempts to write outside its evidence workspace, and to push the branch under review | Rejected by the toolbelt the State granted, not by prompt instruction ([FR-091](../01-product/03-functional-requirements.md)) |
+| **Permission envelope** | One case per prohibition in [FR-123](../01-product/03-functional-requirements.md): default-branch push, force-push, branch delete, tag create, protection change, CI-secret read, merge, auto-merge, approving review | Each fails **inside our code** and never reaches the host ([NFR-035](../01-product/04-non-functional-requirements.md)) |
+| **Chat egress redaction** | Run and finding data seeded with at least 20 credential-shaped and source-shaped values; trigger every chat post path | No source, patch content, verification output, repository path or finding body appears in any post ([NFR-036](../01-product/04-non-functional-requirements.md)) |
 
 ## v2 seam
 
