@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0010](0010-termination-guards.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/07-worksites.md](../01-product/07-worksites.md), FR-091 to FR-099
+**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0010](0010-termination-guards.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/07-worksites.md](../01-product/07-worksites.md), FR-095 to FR-103
 
 ## Context
 
@@ -34,53 +34,53 @@ is "80% complete" with two hundred unmerged pull requests has completed nothing 
 A **worksite** is a first-class entity: a declared, bounded campaign that converts a repository-wide
 objective into many Runs, in one lane, across one or more repositories in one tenant.
 
-**A worksite MUST declare a progress command** (FR-091). It is an argv vector, executed in a Sandbox on
+**A worksite MUST declare a progress command** (FR-095). It is an argv vector, executed in a Sandbox on
 a named commit, whose output yields an integer count of remaining work: files not yet converted, lint
 violations outstanding, services still on the old framework. A worksite whose objective cannot be
 counted by a command is not a worksite. This is the work-class oracle rule
 ([01-product/05-work-classes.md](../01-product/05-work-classes.md)) applied one level up, and it is
 what keeps "modernise this codebase" out.
 
-**Progress is measured on the default branch, not on opened pull requests** (FR-092). The progress
+**Progress is measured on the default branch, not on opened pull requests** (FR-096). The progress
 command runs against merged state. A worksite's completion percentage therefore only moves when a human
 merges something. Opened, un-merged pull requests are reported separately as *work in flight*, never as
 progress.
 
-**A worksite is bounded by four ceilings, all declared before it starts** (FR-093): total spend, total
+**A worksite is bounded by four ceilings, all declared before it starts** (FR-097): total spend, total
 Runs, wall-clock duration, and maximum concurrently open pull requests. Breaching any of them pauses
 the worksite and escalates; none of them may be raised while it is active. Raising a ceiling means
 editing the worksite configuration, which creates a new immutable version and is recorded — the same
 rule as Project configuration ([FR-005](../01-product/03-functional-requirements.md)).
 
-**A worksite has its own progress oracle** (FR-094), by direct analogy with
+**A worksite has its own progress oracle** (FR-098), by direct analogy with
 [`GUARD_PROGRESS`](../02-architecture/05-orchestration-and-termination.md#guard_progress). If the
 measured remaining count has not fallen across a declared number of consecutive completed cycles, the
 worksite pauses and escalates. A campaign that is not reducing its own count is thrashing at a larger
 scale, and the reason the per-Run guard exists applies unchanged.
 
-**A worksite creates Runs; it never creates Tasks** (FR-095). Each Run stays exactly what it is today:
+**A worksite creates Runs; it never creates Tasks** (FR-099). Each Run stays exactly what it is today:
 one repository, one branch, its own Tasks, its own guards, its own ceiling, its own audit trail. This
 is deliberate and it is the whole reason worksites are additive rather than a rewrite — failure
 attribution stays per Run, and no existing guard changes.
 
-**A worksite claims a path scope per repository, and claims MUST NOT overlap** (FR-096). Two active
+**A worksite claims a path scope per repository, and claims MUST NOT overlap** (FR-100). Two active
 worksites cannot hold overlapping path scopes in the same repository at the same time. The second
 claimant waits, visibly, and its waiting is a recorded state with a reason — not an invisible queue.
 
-**Worksite state is rows and an append-only worksite event log** (FR-097), folded the same way a Run's
+**Worksite state is rows and an append-only worksite event log** (FR-101), folded the same way a Run's
 is ([09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)). It is not model memory, not a
 carried-over context, and not a summary an agent wrote. Nothing an agent concluded in one Run reaches
 another Run except as a named, digested artifact. This is what keeps Seam 7's prohibition on cross-Run
 learning intact while still letting a campaign survive a restart.
 
-**Pause and resume are durable, and resume re-surveys** (FR-098). Pausing stops the creation of new
+**Pause and resume are durable, and resume re-surveys** (FR-102). Pausing stops the creation of new
 Runs; in-flight Runs finish or park. Resuming re-executes the progress command before creating anything,
 because the repository moved while the worksite was paused and a slice plan computed against a stale
 tree is a plan to produce conflicts.
 
 **A worksite terminates.** `COMPLETED` when the remaining count reaches the declared target,
 `ABANDONED` when a human stops it, `PAUSED` on any ceiling or the progress oracle. There is no state in
-which a worksite continues indefinitely without a human decision (FR-099).
+which a worksite continues indefinitely without a human decision (FR-103).
 
 ## Alternatives considered
 

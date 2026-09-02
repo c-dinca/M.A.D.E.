@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0015](0015-credential-brokering-no-secrets-in-sandbox.md), FR-031, FR-032, [19-repository-access.md](../02-architecture/19-repository-access.md), FR-116 to FR-122
+**Relates to:** [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0015](0015-credential-brokering-no-secrets-in-sandbox.md), FR-031, FR-032, [19-repository-access.md](../02-architecture/19-repository-access.md), FR-122 to FR-128
 
 ## Context
 
@@ -30,13 +30,13 @@ retry, fall back, or work around it. Each of those turns an access boundary into
 ## Decision
 
 **The system authenticates as its own identity: a dedicated application installation per tenant per
-git-host account, with the narrowest grants the host offers** (FR-116). A personal access token
+git-host account, with the narrowest grants the host offers** (FR-122). A personal access token
 belonging to a human MUST NOT be accepted as a repository credential, in any deployment mode. Where a
 host offers no application-installation mechanism, the credential MUST belong to a dedicated
 machine account created for this purpose, and the customer-facing documentation MUST state which
 restrictions below are enforced by the host and which are enforced only by us.
 
-**The permission envelope is a hard boundary** (FR-117). It is enforced at the point requests are
+**The permission envelope is a hard boundary** (FR-123). It is enforced at the point requests are
 constructed, not merely by the grant, so that a host misconfiguration cannot widen it. A test asserts
 each prohibition.
 
@@ -66,28 +66,28 @@ is unchanged and reinforced: no credential enters a Sandbox, no git command runs
 delivery is a control-plane effect gated on a recorded human approval
 ([FR-032](../01-product/03-functional-requirements.md)).
 
-**Required permissions are verified at registration and refused if absent** (FR-118). Registering a
+**Required permissions are verified at registration and refused if absent** (FR-124). Registering a
 repository enumerates the permissions the enabled work classes need and refuses registration if any is
 missing, naming the permission and the class that needs it. A repository is never registered in a
 partially working state.
 
 **A missing or revoked permission at run time parks the Run; it is never retried or worked around**
-(FR-119). The Run enters `AWAIT_HUMAN` with reason `access_insufficient`, naming the permission and the
+(FR-125). The Run enters `AWAIT_HUMAN` with reason `access_insufficient`, naming the permission and the
 operation that needed it. There MUST be no fallback path: no alternative credential, no push to a
 different ref, no degraded delivery. This is the same shape as the isolation runtime's fail-closed
 rule ([FR-055](../01-product/03-functional-requirements.md)), for the same reason — a silent workaround
 makes a documented boundary false while every test still passes.
 
-**Revocation is one action on the customer's side and takes effect without our cooperation** (FR-120):
+**Revocation is one action on the customer's side and takes effect without our cooperation** (FR-126):
 removing the application installation, or revoking the machine account's access, at the git host. On
 the next attempted operation the system detects it, parks every affected Run with reason
 `access_revoked`, stops attempting git effects for that repository, and surfaces the state in the
 console. It MUST NOT retry on a schedule, and it MUST NOT require us to be reachable for revocation to
 work. A tenant-side kill switch — disabling a Project, or the whole tenant — exists as well and is
-recorded as an approval-class action (FR-121).
+recorded as an approval-class action (FR-127).
 
 **Every git operation is recorded as an event with the operation, the ref, the identity used and the
-outcome** (FR-122), so "what did it do to our repository" is a query rather than an investigation.
+outcome** (FR-128), so "what did it do to our repository" is a query rather than an investigation.
 
 ## Alternatives considered
 

@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-09-02
 **Supersedes:** [ADR-0016](0016-server-rendered-run-viewer.md)
-**Relates to:** [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), FR-045, FR-067, [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), [01-product/09-web-interface-and-admin-console.md](../01-product/09-web-interface-and-admin-console.md), OQ-18, FR-123 to FR-133
+**Relates to:** [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), FR-045, FR-067, [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), [01-product/09-web-interface-and-admin-console.md](../01-product/09-web-interface-and-admin-console.md), OQ-18, FR-129 to FR-139
 
 ## Context
 
@@ -39,11 +39,11 @@ reader suspicious.
 
 **The console is a product surface, not an operational afterthought.** Its page set covers Runs,
 worksites, requests, findings, effectiveness, budgets and alerts, approval policy, users and teams,
-repository access status, and audit export (FR-123). What lands in the first version and what comes
+repository access status, and audit export (FR-129). What lands in the first version and what comes
 later is **OQ-18** and is not decided here; the page set is the specification of the whole, and any
 subset that ships MUST satisfy the display rules below.
 
-**An effectiveness dashboard is required, not optional** (FR-124). It reports, per lane and per work
+**An effectiveness dashboard is required, not optional** (FR-130). It reports, per lane and per work
 class, with an explicit window:
 
 | Measure | Definition |
@@ -57,12 +57,12 @@ class, with an explicit window:
 | Worksite burn-down | Measured remaining count over time, on merged state ([ADR-0024](0024-worksites-as-long-running-campaigns.md)) |
 
 **Every figure on it is derived from the event log by a query that a customer can run themselves**
-(FR-125). No figure may be computed from a rollup table, a framework checkpoint, or a number an agent
+(FR-131). No figure may be computed from a rollup table, a framework checkpoint, or a number an agent
 produced ([ADR-0004](0004-event-log-separate-from-checkpoints.md)). The query behind each measure is
 published.
 
 **The display rules from [ADR-0016](0016-server-rendered-run-viewer.md) are retained in full and
-extended** (FR-126). Verification status renders as *verified*, *failed verification* or *not
+extended** (FR-132). Verification status renders as *verified*, *failed verification* or *not
 verified*; a parked Run renders as "waiting for approval" with its reason, never as a spinner; unknown
 values render as "unknown", never as zero. Added: the lane is visible before the content and a
 verified result is rendered differently from a suggestion
@@ -71,32 +71,32 @@ from an `unverified` one ([ADR-0023](0023-advisory-findings-carry-evidence.md));
 insufficient data renders as "insufficient data" with the count, never as 0%; and work in flight is
 never rendered as progress. These are product requirements with tests, not styling.
 
-**Rendering stays server-side** (FR-127). This ADR expands the *scope* of the interface and does not
+**Rendering stays server-side** (FR-133). This ADR expands the *scope* of the interface and does not
 reverse ADR-0016's technology choice, because no requirement stated by the founder needs a client
 application and inventing one here would be a decision nobody asked for. Progressive enhancement for
 polling and for a chart is permitted; a separate frontend build, a framework and a second deployment
 artifact are not, until the trigger below. The consequence to accept is that this constrains what the
 dashboard can look like.
 
-**Administration is first-class and every administrative action is an event** (FR-128). Budgets per
+**Administration is first-class and every administrative action is an event** (FR-134). Budgets per
 tenant, per team, per repository and per worksite, with alert thresholds. Approval policy binding
 `(scope, lane, work class)` to the principals who may approve and a minimum approver count, defaulting
-to one, with self-approval of one's own chat request forbidden by default (FR-129). Users, teams and
+to one, with self-approval of one's own chat request forbidden by default (FR-135). Users, teams and
 roles. Repository access status including `access_revoked` and `access_insufficient`
 ([ADR-0027](0027-scoped-application-identity-branches-only.md)). Audit export reachable by an
-`auditor` principal without any capability to start work (FR-130).
+`auditor` principal without any capability to start work (FR-136).
 
-**No console surface may execute anything on demand** (FR-131). The rule from
+**No console surface may execute anything on demand** (FR-137). The rule from
 [03-api-design.md](../02-architecture/03-api-design.md) holds unchanged: there is no "run this command",
 no "force this transition", no "approve all". The console is a view and a decision surface over the
 same API, with the same role enforcement, and it MUST NOT have a private endpoint.
 
-**Cross-tenant aggregation is off by default and requires explicit configuration** (FR-132). A hosted
+**Cross-tenant aggregation is off by default and requires explicit configuration** (FR-138). A hosted
 deployment MUST NOT compute benchmark or comparison figures across tenants unless each tenant has
 enabled it, and MUST record that consent. **No cross-tenant figure is published in this specification,
 because none has been measured.**
 
-**Every dashboard measure carries the count it was computed from** (FR-133). A 100% acceptance rate over
+**Every dashboard measure carries the count it was computed from** (FR-139). A 100% acceptance rate over
 two pull requests is not a 100% acceptance rate, and a surface that shows the percentage without the
 denominator is the same defect as rendering unknown as zero.
 
@@ -112,7 +112,7 @@ dependency tree is what keeps a solo-operated system operated.
 It loses because worksites, requests and findings have no representation anywhere else, so "the git
 host shows it" stops being true, and because hosted multi-tenancy needs identity, permissions and
 budget administration that an API-key-per-caller model does not provide. What survives is the whole of
-its technology argument, which is why FR-127 keeps server-side rendering.
+its technology argument, which is why FR-133 keeps server-side rendering.
 
 ### Build a single-page application now — rejected
 
@@ -134,7 +134,7 @@ data, let the customer build the view in whatever they already use. Zero interfa
 charting library, and the customer's own tool is better than ours.
 
 Rejected because the person who decides on renewal will not run a query, and a number nobody looks at
-does not inform a decision. The export is retained — every measure's query is published (FR-125) — but
+does not inform a decision. The export is retained — every measure's query is published (FR-131) — but
 it is in addition to the view, not instead of it.
 
 ### Report activity metrics instead: runs, pull requests opened, comments posted — rejected
@@ -184,7 +184,7 @@ rather than a wrong page.
 
 **Administration through an interface invites the affordances this system refuses.** Every admin
 console anyone has used has a "retry", a "force", an "approve all" and an "edit". Each will be
-requested, each is forbidden by FR-131, and each refusal has to be explained again.
+requested, each is forbidden by FR-137, and each refusal has to be explained again.
 
 **The operator's page count grows well past what one person maintains casually**, and every page carries
 truthful-rendering tests it must not be shipped without.

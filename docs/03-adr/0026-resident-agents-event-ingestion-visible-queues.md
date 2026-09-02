@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), NFR-021, [ADR-0003](0003-postgres-as-system-of-record.md), [ADR-0004](0004-event-log-separate-from-checkpoints.md), [17-persistence-and-concurrency.md](../02-architecture/17-persistence-and-concurrency.md), FR-109 to FR-115
+**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), NFR-021, [ADR-0003](0003-postgres-as-system-of-record.md), [ADR-0004](0004-event-log-separate-from-checkpoints.md), [17-persistence-and-concurrency.md](../02-architecture/17-persistence-and-concurrency.md), FR-115 to FR-121
 
 ## Context
 
@@ -37,42 +37,42 @@ API. It is unworkable for a system that reacts to events, because there is no cl
 ## Decision
 
 **Residency is behavioural, not architectural.** Agent invocations remain stateless: an agent is
-constructed per State entry, receives artifacts, produces an artifact, and is discarded (FR-109). No
+constructed per State entry, receives artifacts, produces an artifact, and is discarded (FR-115). No
 agent process outlives a Run, no agent holds context between Runs, and nothing an agent concluded
 reaches a later Run except as a named artifact with a digest. The swarm is delivered by the control
 plane, not by the agents.
 
-**Work arrives through a durable ingress** (FR-110). Every inbound trigger — a pull request opened or
+**Work arrives through a durable ingress** (FR-116). Every inbound trigger — a pull request opened or
 updated on a target repository, a push to a default branch, a chat request, a schedule window, a
 worksite cycle — is recorded as an **ingress event** before anything acts on it. Ingestion is
 idempotent on the provider's delivery identifier, so a redelivery produces no second Run. An ingress
 event that cannot be recorded is not acted on, which is
 [09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)'s rule applied at the boundary.
 
-**Queues are permitted and MUST be visible** (FR-111). This reverses the `429`-instead-of-queueing rule
+**Queues are permitted and MUST be visible** (FR-117). This reverses the `429`-instead-of-queueing rule
 for internally generated work, and the honest-failure principle is preserved by a different mechanism:
 every queued item is a row with a position, an age, a reason for waiting and a cause, exposed in the
 console and countable in a metric. Nothing is queued invisibly, no queue is unbounded, and a queue
 that reaches its bound sheds work with a recorded reason rather than growing. Human-submitted API
 requests keep the existing `429` behaviour, because there a caller can decide.
 
-**Scheduling is durable and pure at the decision point** (FR-112). Schedules and worksite cycles live
+**Scheduling is durable and pure at the decision point** (FR-118). Schedules and worksite cycles live
 in Postgres, survive restarts, and do not silently backfill: a missed window is a recorded event with a
 reason, never a burst of catch-up Runs. The scheduler is a loop inside the existing worker.
 
-**Concurrency and resources are governed at four levels** (FR-113): deployment, tenant, project and
+**Concurrency and resources are governed at four levels** (FR-119): deployment, tenant, project and
 worksite. Each level has a concurrent-Run cap and a spend ceiling, and admission is checked at every
 level before a Run is created, not after. A tenant cannot exhaust another tenant's capacity, and a
 worksite cannot exhaust its project's.
 
-**The process-kind ceiling holds** (FR-114, [NFR-021](../01-product/04-non-functional-requirements.md)).
+**The process-kind ceiling holds** (FR-120, [NFR-021](../01-product/04-non-functional-requirements.md)).
 No new long-running process kind is introduced. Inbound ingestion is a set of routes on `api`; the
 scheduler, the worksite driver, the chat egress effect and the reaper are loops and effect handlers
 inside `worker`; the queue is a table in `postgres`. Replicating `api` or `worker` horizontally is not
 a new kind — this is a clarification of NFR-021, recorded here because the previous wording counted
 processes rather than kinds and would otherwise be read as forbidding a second worker.
 
-**State that survives between Runs lives in exactly three places** (FR-115): the git repository, the
+**State that survives between Runs lives in exactly three places** (FR-121): the git repository, the
 append-only event logs (Run and worksite), and versioned configuration rows. There is no fourth store,
 no cache of conclusions, and no vector index.
 

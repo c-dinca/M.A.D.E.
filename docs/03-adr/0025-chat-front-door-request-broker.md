@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0011](0011-durable-human-approval-gates.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/08-chat-front-door.md](../01-product/08-chat-front-door.md), OQ-19, OQ-20, OQ-22, FR-100 to FR-108
+**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0011](0011-durable-human-approval-gates.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/08-chat-front-door.md](../01-product/08-chat-front-door.md), OQ-19, OQ-20, OQ-22, FR-106 to FR-114
 
 ## Context
 
@@ -37,43 +37,43 @@ template fits.
 
 ## Decision
 
-**A chat message becomes a `request`, and a request is not a Run** (FR-100). Requests have their own
+**A chat message becomes a `request`, and a request is not a Run** (FR-106). Requests have their own
 entity, their own lifecycle and their own event log. Nothing executes and no budget is spent while a
 request is being triaged beyond the bounded triage allowance below.
 
-**Every requester is an identity mapped by an administrator to an entitlement** (FR-101): a tenant, a
+**Every requester is an identity mapped by an administrator to an entitlement** (FR-107): a tenant, a
 team, the repositories they may target, the work classes and lanes they may invoke, and a per-request
 and per-period budget. An unmapped chat identity CANNOT create a request — the message is answered with
 a decline naming the missing mapping. Chat platform membership is never itself an entitlement, because
 who is in a channel is not a decision our customer's security function has made.
 
-**v1 brokers a request onto a declared work class, or declines it** (FR-102). Triage matches the
+**v1 brokers a request onto a declared work class, or declines it** (FR-108). Triage matches the
 message against the entitled classes and extracts parameters. If no class fits, the request is
 `DECLINED` with the reason stated in-channel and recorded as an event. **It is not converted into a
 free-text Run.** Whether generated planning returns to the critical path so that arbitrary requests can
 be served is **OQ-19** and is not decided here.
 
-**Clarification is bounded** (FR-103). The broker may ask at most a declared number of clarifying
+**Clarification is bounded** (FR-109). The broker may ask at most a declared number of clarifying
 questions in the originating thread (default 2), and a request unanswered for a declared TTL is
 `DECLINED` with a reason. There is no open-ended conversation: an unbounded dialogue is an unbounded
 spend and an unbounded latency, and this system does not have either. Triage and clarification pass
-through the same budget admission as every other model call (FR-104).
+through the same budget admission as every other model call (FR-110).
 
-**Ambiguity is declined, never guessed** (FR-105). If triage cannot determine the target repository,
+**Ambiguity is declined, never guessed** (FR-111). If triage cannot determine the target repository,
 the class, or a required parameter after its clarification allowance, the request is declined. This is
 [FR-029](../01-product/03-functional-requirements.md)'s rule applied at the front door.
 
 **Approval does not move to chat.** A recorded approval requires an attributable actor and the artifact
 digests that actor saw ([ADR-0011](0011-durable-human-approval-gates.md)). v1 posts a link; the
-decision is taken in the console or through the API (FR-106). Whether a chat-native approval with an
+decision is taken in the console or through the API (FR-112). Whether a chat-native approval with an
 adequate binding is acceptable is **OQ-20**.
 
-**A requester follows progress in-channel and through a scoped console view** (FR-107). The broker
+**A requester follows progress in-channel and through a scoped console view** (FR-113). The broker
 posts state transitions and the terminal outcome into the originating thread, and the requester may
 open a read-only view of their own request without a git-host account. They never gain repository
 access by asking for a change.
 
-**What may be posted to a chat platform is an allowlist, not a discretion** (FR-108): request state,
+**What may be posted to a chat platform is an allowlist, not a discretion** (FR-114): request state,
 the class invoked, the outcome, cost against the requester's allowance, a pull-request URL, and
 finding *counts*. Source code, patch content, verification output, repository paths and finding bodies
 MUST NOT be posted by default. Chat is a third party under
