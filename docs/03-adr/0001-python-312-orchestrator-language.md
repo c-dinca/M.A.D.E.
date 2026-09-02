@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** [04-engineering/01-repo-structure.md](../04-engineering/01-repo-structure.md)
+**Relates to:** [07-deferred.md](../07-deferred.md)
 
 ## Context
 
@@ -19,7 +19,7 @@ bindings, the provider SDKs and the evaluation tooling are not.
 
 The control plane, agent layer, tools, sandbox provider and evaluation harness MUST be written in
 Python 3.12. Type hints are mandatory and `mypy --strict` is a CI gate
-([04-engineering/03-coding-standards.md](../04-engineering/03-coding-standards.md)).
+([07-deferred.md](../07-deferred.md)).
 
 3.12 rather than the 3.11 floor the intake mentions, for the improved error messages and the typing
 features the artifact schemas rely on. No dependency in the stack requires an older interpreter.
@@ -71,6 +71,6 @@ product, is not available to us.
 ## Revisit when
 
 The sandbox supervisor becomes a separate process on a separate host
-([11-infrastructure-and-devops.md](../02-architecture/11-infrastructure-and-devops.md), scaling step
+([02-architecture.md](../02-architecture.md), scaling step
 3). At that point the supervisor is a candidate for Go on its own merits, without disturbing the
 control plane.

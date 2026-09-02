@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** UF-4, FR-056, NFR-005, [04-execution-isolation.md](../02-architecture/04-execution-isolation.md)
+**Relates to:** UF-4, FR-056, NFR-005, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -11,16 +11,16 @@ the execution environment a credential and lets it run `git clone` and `git push
 developer's machine and most CI runners do.
 
 That approach puts a credential inside the one environment that is defined as attacker-controlled
-([04-execution-isolation.md](../02-architecture/04-execution-isolation.md)). Credential theft is the
+([02-architecture.md](../02-architecture.md)). Credential theft is the
 first thing a security reviewer asks about
-([UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)), and "the sandbox is
+([UF-4](../02-architecture.md)), and "the sandbox is
 strong enough to protect it" is a much weaker answer than "there is nothing to steal".
 
 ## Decision
 
 No credential of any kind exists inside a Sandbox
-([FR-056](../01-product/03-functional-requirements.md),
-[NFR-005](../01-product/04-non-functional-requirements.md)). Concretely:
+([FR-056](../03-requirements.md),
+[NFR-005](../03-requirements.md)). Concretely:
 
 **Checkout is a file transfer.** The control plane maintains a bare mirror per Project and populates
 the Sandbox workspace through `write_files`. The Sandbox never runs `git fetch`, and it needs no
@@ -38,7 +38,7 @@ the customer rather than implying an enforcement that does not exist.
 
 **Model credentials likewise never enter a Sandbox**, which is what prevents injected content from
 spending budget or reaching a model
-([01-system-overview.md](../02-architecture/01-system-overview.md#container-view)).
+([02-architecture.md](../02-architecture.md)).
 
 ## Alternatives considered
 
@@ -74,7 +74,7 @@ exists specifically to avoid adding channels.
 
 The answer to "what happens if an agent is compromised" is that it produces a bad patch a human
 declines. Credential theft is not in the threat model because there is no credential, which makes
-[NFR-005](../01-product/04-non-functional-requirements.md) a scan with an unambiguous pass condition.
+[NFR-005](../03-requirements.md) a scan with an unambiguous pass condition.
 It composes with the no-network decision: neither would be as strong alone. Delivery remains gated on
 human approval by construction, since the Sandbox physically cannot push.
 
@@ -85,7 +85,7 @@ inspect history, blame a line, stash — is unavailable unless the toolbelt prov
 each such tool is new surface. Patch extraction is ours to implement by reading and diffing the
 workspace, rather than free from `git diff`. Populating a workspace by file transfer is slower than a
 local clone for a large repository and counts against
-[NFR-001](../01-product/04-non-functional-requirements.md). And the control plane now holds every
+[NFR-001](../03-requirements.md). And the control plane now holds every
 credential in one place, which makes it a higher-value target — mitigated by holding secrets in memory
 rather than on disk, but it is a real concentration of risk.
 

@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** UF-2, UF-5, [05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md)
+**Relates to:** UF-2, UF-5, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -18,7 +18,7 @@ the prompt, and the reviewer.
 
 The workspace lives in git. Each Run works on a branch created from the declared base commit; each
 accepted patch becomes a commit with trailers naming the run, task, attempt, verification command,
-model and prompt version ([FR-044](../01-product/03-functional-requirements.md)).
+model and prompt version ([FR-044](../03-requirements.md)).
 
 The graph state holds **references only**: base commit, branch, head commit, artifact digests, Task
 identifiers, attempt records. File contents MUST NOT appear in graph state, and a Sandbox's workspace
@@ -42,7 +42,7 @@ entire codebase is serialised on every step of every Run — turning an O(1) wri
 size) and putting real pressure on the datastore for data that is already versioned elsewhere. Once
 the code is in the state object it inevitably reaches prompts, because it is right there and
 convenient, which is the exact failure
-[08-context-and-retrieval.md](../02-architecture/08-context-and-retrieval.md) exists to prevent. And
+[02-architecture.md](../02-architecture.md) exists to prevent. And
 the reducer merging concurrent file updates is a re-implementation of version control that will be
 worse than git at conflict semantics, history and diffing — for no benefit, since git is already
 present in every target repository.

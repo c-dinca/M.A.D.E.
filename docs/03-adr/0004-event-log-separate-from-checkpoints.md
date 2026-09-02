@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** UF-5, [09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)
+**Relates to:** UF-5, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -12,7 +12,7 @@ written, already durable, and already ordered.
 
 But a checkpoint is a *state snapshot*, not a *history*. It answers "where is this Run" and not "what
 did this Run do". The audit consumer — a security reviewer asking which commands executed and where
-data could have gone ([UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures))
+data could have gone ([UF-5](../02-architecture.md))
 — needs the second question answered, and no sequence of snapshots reconstructs it: an execution that
 happened between two snapshots and changed nothing visible in state simply is not there.
 
@@ -22,7 +22,7 @@ happened between two snapshots and changed nothing visible in state simply is no
 resumption cache with no audit standing.
 
 Concretely: every effect writes an event, in the effect's transaction. Run state is derivable by
-folding events ([NFR-016](../01-product/04-non-functional-requirements.md)). Checkpoints MUST NOT be
+folding events ([NFR-016](../03-requirements.md)). Checkpoints MUST NOT be
 read by any audit, export, reporting or reconciliation path, and deleting all checkpoints for a
 terminal Run MUST NOT lose any information — a property asserted by a test, because it is the cheapest
 way to keep the boundary from eroding.
@@ -66,7 +66,7 @@ permanent regression tests.
 Every effect is written twice: once as its own row, once as an event. That is extra write volume on
 the hot path and extra code at every effect site, and forgetting the event at a new effect site is a
 silent audit gap — which is why the nightly reconciliation in
-[NFR-015](../01-product/04-non-functional-requirements.md) exists rather than trusting discipline. The
+[NFR-015](../03-requirements.md) exists rather than trusting discipline. The
 event schema is now ours to version and evolve compatibly, forever. And there is a standing temptation
 to read a checkpoint because it is right there and already parsed; that temptation must be resisted in
 review, which is a permanent tax on attention.

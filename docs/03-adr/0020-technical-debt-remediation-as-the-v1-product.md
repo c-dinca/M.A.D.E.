@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-14
-**Relates to:** OQ-03 (resolved by this ADR), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0019](0019-specification-first-projects.md) (withdrawn by this ADR), [01-product/05-work-classes.md](../01-product/05-work-classes.md)
+**Relates to:** OQ-03 (resolved by this ADR), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0019](0019-specification-first-projects.md) (withdrawn by this ADR), [01-product.md](../01-product.md)
 
 ## Context
 
@@ -45,17 +45,17 @@ The v1 product is **autonomous remediation of technical debt in existing reposit
 pull requests a human reviews and merges.
 
 - Target repositories always exist and always have a passing baseline verification command. Refusal at
-  registration ([FR-004](../01-product/03-functional-requirements.md)) stands and is now a product
+  registration ([FR-004](../03-requirements.md)) stands and is now a product
   boundary rather than a limitation.
 - Work is organised into **work classes**, each with a declared task template and a declared oracle.
   The catalogue, the ranking and the first class to build are in
-  [01-product/05-work-classes.md](../01-product/05-work-classes.md).
+  [01-product.md](../01-product.md).
 - A Run may be created by a schedule as well as by a person
-  ([FR-082](../01-product/03-functional-requirements.md)), because recurring unattended execution is
+  ([FR-082](../03-requirements.md)), because recurring unattended execution is
   the shape of the work.
 - **The Architect is no longer on the critical path to the first sellable capability.** A work class
   supplies a fixed task template, so the first product ships with a deterministic plan and no planning
-  model call ([FR-081](../01-product/03-functional-requirements.md)). Generated planning remains
+  model call ([FR-081](../03-requirements.md)). Generated planning remains
   specified and moves behind the first revenue.
 - Greenfield generation is **out of scope**, and OQ-03 is closed accordingly.
 

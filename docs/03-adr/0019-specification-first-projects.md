@@ -2,7 +2,7 @@
 
 **Status:** **Withdrawn** by [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), 2026-08-14.
 **Date:** 2026-08-06
-**Relates to:** OQ-03 (resolved against this design), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0018](0018-spec-as-contract-and-spec-lint.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md) (Seam 4)
+**Relates to:** OQ-03 (resolved against this design), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0018](0018-spec-as-contract-and-spec-lint.md), [02-architecture.md](../02-architecture.md) (Seam 4)
 
 > **Withdrawn, with the reasoning retained deliberately.** OQ-03 has been resolved in favour of
 > maintenance work on existing repositories
@@ -13,14 +13,14 @@
 >
 > Two things it justified are **retained**, because they pay for themselves in the maintenance product
 > independently: `spec-lint` as a library with a machine-readable report (`SPEC-01`), and an enforced
-> `touches` path scope per Task ([FR-080](../01-product/03-functional-requirements.md)) — which is
+> `touches` path scope per Task ([FR-080](../03-requirements.md)) — which is
 > *more* useful for maintenance work than it would have been here, because the affected paths of a
 > dependency upgrade are predictable in advance.
 
 ## Context
 
 v1 changes existing repositories, and the reason is narrow and specific: the verification oracle that
-carries [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures) needs a test
+carries [UF-3](../02-architecture.md) needs a test
 harness that already exists and that the system did not write. Greenfield generation was excluded
 because a scaffold passing its own generated tests proves nothing (OQ-03, Seam 4).
 
@@ -46,7 +46,7 @@ is precisely what every other candidate greenfield mechanism could not do.
 Contract-first ordering then gives the *implementation* phase an oracle ladder on a repository that
 started empty: schema validity, then conformance of the implementation to the published contract, then
 type check and lint, then acceptance tests written by the QA agent under the double-execution rule
-([06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md)). Each
+([02-architecture.md](../02-architecture.md)). Each
 rung is weaker than a mature test suite and stronger than nothing, and each is a real exit code.
 
 Two further alignments make this less of an addition than it appears. The backlog in such a bundle
@@ -77,10 +77,10 @@ producing forty documents for a small change:
 Normative authority is confined to what is checkable. Generated **contracts** are normative once they
 pass real validators. Generated **prose** is advisory and carries no authority a validator did not
 give it — the same rule this repository applies to itself
-([docs/README.md](../README.md#document-conventions)).
+([README.md](../../README.md)).
 
 A generated bundle MUST additionally ship an **evidence register** of the kind in
-[00-context/05-evidence-and-confidence.md](../00-context/05-evidence-and-confidence.md): every
+[README.md](../../README.md): every
 load-bearing claim classified as proven by execution, internally consistent but unproven, assumed, or
 declined as an open question. Without it the customer receives an authoritative-looking document with
 no way to tell which parts were checked, which is the failure this ADR's negative consequences
@@ -151,7 +151,7 @@ authority is confined to machine-checked artefacts. It is not fully mitigated by
 **Cost, and a two-tier budget problem.** A specification Run's ceiling has no relationship to a code
 Run's ceiling, so either budgets become mode-aware or the guards kill legitimate work. Mode-aware
 budgets are a change to the one mechanism that most directly carries
-[UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), which is not a change
+[UF-2](../02-architecture.md), which is not a change
 to make casually.
 
 **Human review load moves earlier and grows.** Reviewing a specification is harder than reviewing a

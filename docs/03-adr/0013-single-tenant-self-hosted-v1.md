@@ -2,25 +2,25 @@
 
 **Status:** **Superseded by [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md)**, 2026-09-02.
 **Date:** 2026-08-05
-**Relates to:** NFR-021, NFR-022, [11-infrastructure-and-devops.md](../02-architecture/11-infrastructure-and-devops.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)
+**Relates to:** NFR-021, NFR-022, [02-architecture.md](../02-architecture.md)
 
-> **Superseded in part, and the parts matter.** The founder has decided that both self-hosted and
+> **Superseded twice, and the parts matter.** The founder first decided that both self-hosted and
 > hosted multi-tenant operation are supported, so the tenancy prohibition below — no tenant table, no
-> tenant column, no row-level security — is reversed by
-> [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md). Read this record for the
-> argument, which is retained deliberately, because ADR-0021 accepts every cost named in the negative
-> section below rather than disputing it.
+> tenant column, no row-level security — was reversed by
+> [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md). That record was itself
+> superseded the same day by [ADR-0029](0029-hosted-first-one-instance-per-client.md): hosted first,
+> one isolated instance per client, **no shared runtime**. The no-tenant-column argument below
+> **returns**, by a different route — there is nothing to separate inside an instance.
 >
-> **Three things it decided are still in force**, carried forward by ADR-0021 rather than overturned:
-> the process-kind ceiling ([NFR-021](../01-product/04-non-functional-requirements.md), clarified by
-> [ADR-0026](0026-resident-agents-event-ingestion-visible-queues.md)), the eight-alert ceiling
-> ([NFR-022](../01-product/04-non-functional-requirements.md)), and boring infrastructure as a design
-> principle. The one-operator constraint that justified all three is unchanged.
+> Read this record for the argument against a nullable tenant column. A half-measure — the appearance
+> of isolation with none of the substance — was correctly rejected here, and ADR-0021 accepted every
+> cost named in the negative section rather than disputing it. ADR-0029 does not weaken that; it
+> avoids needing the machinery.
 >
-> **The specific reasoning that survives and constrains its successor:** a nullable tenant column
-> creates the *appearance* of isolation with none of the substance. ADR-0021 does not add a column; it
-> requires the whole enforced boundary — `tenant_id NOT NULL`, in every unique constraint and index,
-> with row-level security — precisely because a half-measure was correctly rejected here.
+> **Two process-kind ceilings it decided — NFR-021 and NFR-022 — were later cut as gates**
+> ([07-deferred.md](../07-deferred.md)). The principle still holds: do not add a fifth long-running
+> process without a superseding ADR. The one-operator constraint that justified the ceilings is
+> unchanged.
 
 ## Context
 
@@ -42,15 +42,15 @@ they control, operated by them.
 
 Consequences that are now rules rather than preferences:
 
-- At most four long-running processes ([NFR-021](../01-product/04-non-functional-requirements.md)). A
+- At most four long-running processes ([NFR-021](../03-requirements.md)). A
   fifth requires a superseding ADR.
-- At most eight alert rules ([NFR-022](../01-product/04-non-functional-requirements.md)).
+- At most eight alert rules ([NFR-022](../03-requirements.md)).
 - No tenant table, no tenant column, no row-level security
-  ([15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md), Seam 2).
+  ([02-architecture.md](../02-architecture.md), Seam 2).
 - No billing, plans or entitlements in the software.
 - No Kubernetes, no service mesh, no cloud-provider dependency.
 - Boring infrastructure is a design principle, stated as such
-  ([01-system-overview.md](../02-architecture/01-system-overview.md#design-principles-as-tie-breakers)).
+  ([02-architecture.md](../02-architecture.md)).
 
 ## Alternatives considered
 
@@ -79,7 +79,7 @@ substance — a reviewer sees the column and assumes a guarantee that does not e
 than its absence. Real multi-tenancy is row-level security, key scoping, quota fairness and Sandbox
 isolation between tenants, none of which is free, and building it untested and unused means it will be
 wrong when it is finally needed. The migration is specified instead
-([15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)), and it is *supposed* to be
+([02-architecture.md](../02-architecture.md)), and it is *supposed* to be
 substantial.
 
 ## Consequences
@@ -97,10 +97,10 @@ support.
 customer's failure without their audit export — which makes support slower and product learning
 dramatically weaker than a hosted competitor's. Upgrades happen on the customer's schedule, so several
 versions run in the field simultaneously and every migration must tolerate that. Installation is a
-real barrier: [NFR-020](../01-product/04-non-functional-requirements.md) exists because a
+real barrier: [NFR-020](../03-requirements.md) exists because a
 30-minute bootstrap is the difference between adoption and abandonment, and it is a budget we must
 defend. Per-usage billing is impossible without observing their deployment, which constrains the
-pricing options in [00-context/04-business-model.md](../00-context/04-business-model.md) (OQ-06). And
+pricing options in [01-product.md](../01-product.md) (OQ-06). And
 the eventual multi-tenant migration is now genuinely expensive.
 
 ## Revisit when

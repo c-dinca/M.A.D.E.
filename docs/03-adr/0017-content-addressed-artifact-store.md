@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** [02-data-model.md](../02-architecture/02-data-model.md), [09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)
+**Relates to:** [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -29,12 +29,12 @@ verified on read, and a mismatch is a loud failure — the artifact is treated a
 ### Store artifacts as `bytea` or `jsonb` in Postgres — rejected
 
 The strong case, and it is stronger than it first appears. It removes a process from the deployment,
-which matters directly against [NFR-021](../01-product/04-non-functional-requirements.md) and would
+which matters directly against [NFR-021](../03-requirements.md) and would
 take the topology from four components to three — a meaningful simplification for a self-hosted
 product installed by one person. Artifacts would then commit atomically with their events, so an
 event referencing a missing artifact becomes impossible. Backup is one `pg_dump` rather than a
 database dump plus an object-store copy, which also makes the restore drill in
-[NFR-025](../01-product/04-non-functional-requirements.md) simpler. And `jsonb` would make structured
+[NFR-025](../03-requirements.md) simpler. And `jsonb` would make structured
 artifacts queryable.
 
 It lost on backup and WAL behaviour over time. Verification logs and assembled prompts are the bulk of
@@ -53,7 +53,7 @@ is genuinely sufficient, and it is the smallest possible answer.
 
 Rejected because it makes the second host a migration rather than a configuration change — the moment
 sandbox execution or a second worker moves to another machine
-([11-infrastructure-and-devops.md](../02-architecture/11-infrastructure-and-devops.md), scaling steps
+([02-architecture.md](../02-architecture.md), scaling steps
 2 and 3), a local directory stops working. An S3-compatible interface with a local implementation
 costs almost nothing today and removes that cliff. Filesystem storage also lacks a natural integrity
 check on read, which content addressing gives for free.
@@ -71,13 +71,13 @@ to real S3 or to another host without touching any reference.
 ### Negative
 
 A fourth process in the deployment, with its own credentials, its own volume and its own failure mode
-([NFR-021](../01-product/04-non-functional-requirements.md) is now fully consumed — there is no room
+([NFR-021](../03-requirements.md) is now fully consumed — there is no room
 for another). Artifacts do not commit atomically with events, so an orphaned object is possible after
 a crash and a cleanup job is needed. Backup is two operations that must be consistent with each other,
 which the restore drill has to verify rather than assume. Structured artifacts are not queryable in
 SQL, so a question like "which Specs mentioned authentication" requires reading objects rather than a
 `jsonb` query. And an object-store outage fails Runs at artifact-write time
-([14-integrations.md](../02-architecture/14-integrations.md)).
+([02-architecture.md](../02-architecture.md)).
 
 ## Revisit when
 

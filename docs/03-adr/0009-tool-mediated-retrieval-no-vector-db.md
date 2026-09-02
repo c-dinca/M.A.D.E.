@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** [08-context-and-retrieval.md](../02-architecture/08-context-and-retrieval.md), NFR-014
+**Relates to:** [02-architecture.md](../02-architecture.md), NFR-014
 
 ## Context
 
@@ -49,7 +49,7 @@ the model sees everything so it cannot miss a caller.
 
 Rejected on cost and on accuracy. Input tokens dominate spend and are re-sent on every Attempt, so
 this scales cost with repository size times attempts — the exact shape
-[07-cost-control.md](../02-architecture/07-cost-control.md) is built to avoid. Accuracy also degrades
+[02-architecture.md](../02-architecture.md) is built to avoid. Accuracy also degrades
 as irrelevant material grows, so it is not a straight cost-for-quality trade; it is worse on both
 axes above a modest repository size.
 

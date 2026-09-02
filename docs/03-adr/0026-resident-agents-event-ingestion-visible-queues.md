@@ -1,8 +1,27 @@
 # ADR-0026 — Residency is a property of the control plane: durable ingestion and visible queues, not immortal agents
 
-**Status:** Accepted
+**Status:** **Suspended by the 2026-09 cut** ([ADR-0033](0033-one-verified-lane-one-judgement-lane.md)), except for its central refusal, which still binds.
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), NFR-021, [ADR-0003](0003-postgres-as-system-of-record.md), [ADR-0004](0004-event-log-separate-from-checkpoints.md), [17-persistence-and-concurrency.md](../02-architecture/17-persistence-and-concurrency.md), FR-115 to FR-121
+
+> **Suspended: durable ingestion, visible queues and four-level admission are deferred.** v1 has a
+> person starting a Scene, not an event-driven control plane
+> ([07-deferred.md](../07-deferred.md)).
+>
+> **Its refusal is not suspended.** This record refused the literal reading of "a swarm of agents that
+> lives inside your infrastructure" — long-lived agents holding context — because an agent whose
+> behaviour depends on state that is in no Prompt Book entry makes a Scene unexplainable. **That still
+> binds**, and [ADR-0032](0032-three-actors-two-roles.md) is consistent with it: the Crew and the
+> Prompter are constructed per Scene and discarded. No agent holds state between Scenes.
+>
+> Two of its rules are worth re-reading before building any trigger machinery, because both are easy
+> to get wrong and expensive to discover: **record an inbound trigger before acting on it**, and
+> **never put a clock read in a routing predicate** — the driver evaluates time and delivers an event.
+>
+> Its honest weak point is also preserved: `SELECT … FOR UPDATE SKIP LOCKED` offers no fairness
+> guarantee. That mattered for shared multi-tenancy; with one instance per client
+> ([ADR-0029](0029-hosted-first-one-instance-per-client.md)) it matters much less, which is a benefit
+> of that decision worth noting here.
+**Relates to:** [UF-2](../02-architecture.md), [UF-5](../02-architecture.md), NFR-021, [ADR-0003](0003-postgres-as-system-of-record.md), [ADR-0004](0004-event-log-separate-from-checkpoints.md), [17-persistence-and-concurrency.md](../02-architecture.md), FR-115 to FR-121
 
 ## Context
 
@@ -16,11 +35,11 @@ Two readings of "lives inside" are available and they have opposite consequences
 The first is literal: long-lived agent processes, each holding context, watching the repository,
 accumulating an understanding of the codebase. This is the shape the phrase suggests and it is
 incompatible with almost everything in this repository. An agent holding context across Runs is
-unlogged influence, which breaks [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)
+unlogged influence, which breaks [UF-5](../02-architecture.md)
 and is exactly what Seam 7 forbids. A process that decides for itself when to act has no admission
-control point, which breaks [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures).
+control point, which breaks [UF-2](../02-architecture.md).
 And per-role processes were already rejected in
-[01-system-overview.md](../02-architecture/01-system-overview.md#rejected-architectures) because roles
+[01-system-overview.md](../02-architecture.md) because roles
 are prompts plus tool grants, not workloads.
 
 The second reading is behavioural: from the customer's point of view the system is always there,
@@ -29,7 +48,7 @@ durable ingestion, durable schedules and durable queues. It requires no immortal
 context.
 
 There is also a specific rule to confront rather than skirt.
-[03-api-design.md](../02-architecture/03-api-design.md) refuses to queue: exceeding the concurrency
+[03-api-design.md](../02-architecture.md) refuses to queue: exceeding the concurrency
 limit returns `429` "because an invisible queue makes cost and latency unpredictable and violates the
 honest-failure principle. The client decides whether to wait." That is correct for a human calling an
 API. It is unworkable for a system that reacts to events, because there is no client to decide.
@@ -47,7 +66,7 @@ updated on a target repository, a push to a default branch, a chat request, a sc
 worksite cycle — is recorded as an **ingress event** before anything acts on it. Ingestion is
 idempotent on the provider's delivery identifier, so a redelivery produces no second Run. An ingress
 event that cannot be recorded is not acted on, which is
-[09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)'s rule applied at the boundary.
+[09-audit-and-replay.md](../02-architecture.md)'s rule applied at the boundary.
 
 **Queues are permitted and MUST be visible** (FR-117). This reverses the `429`-instead-of-queueing rule
 for internally generated work, and the honest-failure principle is preserved by a different mechanism:
@@ -65,7 +84,7 @@ worksite. Each level has a concurrent-Run cap and a spend ceiling, and admission
 level before a Run is created, not after. A tenant cannot exhaust another tenant's capacity, and a
 worksite cannot exhaust its project's.
 
-**The process-kind ceiling holds** (FR-120, [NFR-021](../01-product/04-non-functional-requirements.md)).
+**The process-kind ceiling holds** (FR-120, [NFR-021](../03-requirements.md)).
 No new long-running process kind is introduced. Inbound ingestion is a set of routes on `api`; the
 scheduler, the worksite driver, the chat egress effect and the reaper are loops and effect handlers
 inside `worker`; the queue is a table in `postgres`. Replicating `api` or `worker` horizontally is not
@@ -89,7 +108,7 @@ lives in your infrastructure" most naturally means, and the phrase came from the
 It loses to auditability, which is a v1 gate rather than a preference. A resident agent's behaviour
 depends on state that is not in any event log, so "why did it do that" becomes unanswerable and a Run
 stops being explainable from its own record — the failure
-[09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md) and Seam 7 both exist to prevent.
+[09-audit-and-replay.md](../02-architecture.md) and Seam 7 both exist to prevent.
 It also has no natural admission-control point: a process that decides for itself when to act cannot
 be bounded by a per-Run ceiling. The knowledge argument is answered, partially and honestly, by a
 different mechanism — the evaluation corpus and the attempt records accumulate learning *in tests and
@@ -113,7 +132,7 @@ multi-tenant operation implies, this is the conventional answer and the one most
 reach for.
 
 Rejected on the same grounds [ADR-0003](0003-postgres-as-system-of-record.md) and
-[11-infrastructure-and-devops.md](../02-architecture/11-infrastructure-and-devops.md) already used, and
+[11-infrastructure-and-devops.md](../02-architecture.md) already used, and
 one additional one that matters more now: every effect in this system must be written in the same
 transaction as its event. A broker outside the database cannot participate in that transaction, so
 either the audit guarantee weakens or a two-phase reconciliation is written — which is more work than
@@ -147,7 +166,7 @@ see instead of latency they have to guess at.
 the risk profile in this whole revision. Under the old design, spend required a request. Now an
 ingress event can start work, and a misconfigured schedule, a chatty repository or a redelivery storm
 becomes budget. The four-level admission check is what stands between that and
-[UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), and it is new code.
+[UF-2](../02-architecture.md), and it is new code.
 
 **We refused the resident-agent reading of the founder's vision.** That should be stated plainly rather
 than resolved by definition: the quality gains a context-carrying agent might deliver are not available
@@ -160,7 +179,7 @@ SQL, by one person, and the fairness one in particular is genuinely hard.
 **Ingress is an availability dependency with no good degraded mode.** If ingestion stops, nothing
 visibly fails — work simply does not happen, which is the quietest possible failure and precisely the
 kind this project treats as unacceptable. It needs its own alert, which competes for one of the eight
-slots in [NFR-022](../01-product/04-non-functional-requirements.md).
+slots in [NFR-022](../03-requirements.md).
 
 **Reasoning about the system's behaviour now requires reasoning about time.** Schedules, TTLs, queue
 ages and worksite cycles all involve clocks, and the purity rule

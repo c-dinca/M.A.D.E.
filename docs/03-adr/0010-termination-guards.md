@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** UF-2, [05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md), [07-cost-control.md](../02-architecture/07-cost-control.md)
+**Relates to:** UF-2, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -77,7 +77,7 @@ after two says precisely what happened.
 
 Unbounded spend is structurally impossible rather than unlikely: five independent bounds must all fail
 simultaneously. Failures are cheap and legible, which is the product's differentiator
-([NFR-012](../01-product/04-non-functional-requirements.md)). Guards are pure functions over recorded
+([NFR-012](../03-requirements.md)). Guards are pure functions over recorded
 data, so they are exhaustively unit-testable without a model or a database.
 
 ### Negative

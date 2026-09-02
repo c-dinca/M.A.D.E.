@@ -1,9 +1,25 @@
 # ADR-0028 — The web console is a product surface with an effectiveness dashboard; its rendering stays server-side until a trigger
 
-**Status:** Accepted
+**Status:** **Partly suspended by the 2026-09 cut** ([ADR-0033](0033-one-verified-lane-one-judgement-lane.md)). Box Office and the display rules are in force; the rest of the page set is deferred.
 **Date:** 2026-09-02
 **Supersedes:** [ADR-0016](0016-server-rendered-run-viewer.md)
-**Relates to:** [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), FR-045, FR-067, [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), [01-product/09-web-interface-and-admin-console.md](../01-product/09-web-interface-and-admin-console.md), OQ-18, FR-129 to FR-139
+
+> **In force:** the argument for **Box Office** — the four effectiveness numbers — and the display
+> rules. Both survive the cut intact, and the argument is the one that justified them: enforcing
+> truthfulness about a Scene while advertising activity metrics about ourselves would be an
+> inconsistency in our own favour. The four numbers appear from the first client
+> ([FR-130](../03-requirements.md)), computed from the Prompt Book by published queries, each with the
+> count it came from.
+>
+> **Deferred:** most of the page set. v1 ships a **minimal Booth** — Scene list, Scene detail, The
+> Call, and Box Office — and nothing else. Worksite monitoring, the request queue, a findings page,
+> budget administration, approval policy, and users and teams are all deferred
+> ([07-deferred.md](../07-deferred.md)), several of them because the capability behind them is.
+>
+> **Also removed rather than deferred:** everything in this record about tenants, cross-tenant
+> aggregation and per-tenant consent. With one isolated instance per client
+> ([ADR-0029](0029-hosted-first-one-instance-per-client.md)) there are no tenants to aggregate across.
+**Relates to:** [UF-3](../02-architecture.md), FR-045, FR-067, [ADR-0021](0021-deployment-agnostic-core-hosted-and-self-hosted.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), [02-architecture.md](../02-architecture.md), OQ-18, FR-129 to FR-139
 
 ## Context
 
@@ -29,7 +45,7 @@ reports activity instead: runs executed, comments posted, pull requests opened. 
 that always goes up.
 
 Reporting effectiveness honestly is the same commitment as
-[UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), one level up. UF-3
+[UF-3](../02-architecture.md), one level up. UF-3
 says the system does not claim a Task succeeded without proof; the dashboard says the product does not
 claim it was worth paying for without proof. Refusing the second while enforcing the first would be
 inconsistent, and the inconsistency would be in our favour, which is the direction that should make a
@@ -87,7 +103,7 @@ roles. Repository access status including `access_revoked` and `access_insuffici
 `auditor` principal without any capability to start work (FR-136).
 
 **No console surface may execute anything on demand** (FR-137). The rule from
-[03-api-design.md](../02-architecture/03-api-design.md) holds unchanged: there is no "run this command",
+[03-api-design.md](../02-architecture.md) holds unchanged: there is no "run this command",
 no "force this transition", no "approve all". The console is a view and a decision surface over the
 same API, with the same role enforcement, and it MUST NOT have a private endpoint.
 
@@ -146,7 +162,7 @@ a deception.
 Rejected because it is the same failure as reporting a Task successful without an exit code, and this
 product has no standing to commit it. Activity is what the system did; effectiveness is what the
 customer got. Activity figures are retained as *operational* metrics for the operator
-([12-observability-and-slos.md](../02-architecture/12-observability-and-slos.md)) and are excluded from
+([12-observability-and-slos.md](../02-architecture.md)) and are excluded from
 the effectiveness dashboard.
 
 ## Consequences

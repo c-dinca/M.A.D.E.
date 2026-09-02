@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), FR-088, FR-089, FR-090, [01-product/06-lanes.md](../01-product/06-lanes.md)
+**Relates to:** [UF-3](../02-architecture.md), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0022](0022-two-lanes-verified-and-advisory.md), FR-088, FR-089, FR-090, [01-product.md](../01-product.md)
 
 ## Context
 
@@ -24,7 +24,7 @@ recorded in the event log — the same primitive [ADR-0014](0014-verification-or
 already relies on. A reader checks it in seconds by looking at the exit code, and can re-run it.
 
 The distinction that has to be got right, because it is the one that would otherwise reintroduce
-[UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures): **evidence proves the
+[UF-3](../02-architecture.md): **evidence proves the
 demonstration, not the judgement.** A failing test proves that a test fails. Whether the failure
 matters, whether the behaviour is a bug or an intended edge case, and whether the change should be
 made are all still human calls. Evidence makes a claim checkable; it does not make the advisory lane
@@ -39,7 +39,7 @@ Wherever it is possible, an advisory agent MUST produce an artifact rather than 
 - `demonstrated` — the finding references an **evidence record**: an argv vector, the tree it ran
   against identified by commit and patch digest, its exit code, its normalised output, and the Run,
   Task and Attempt that produced it. The same executor and the same normaliser as the verified lane
-  ([06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md)); no
+  ([06-verification-and-truthfulness.md](../02-architecture.md)); no
   second implementation.
 - `unverified` — no such record exists. The agent MUST say so on the finding itself, in those words,
   and MUST NOT omit the finding to avoid the label.
@@ -54,13 +54,13 @@ finding leads with the word *unverified*. They MUST NOT share formatting, and a 
 
 **The ratio is recorded and reported per class** (FR-090). Share of findings carrying evidence is a
 first-class metric on the effectiveness dashboard
-([01-product/09-web-interface-and-admin-console.md](../01-product/09-web-interface-and-admin-console.md)),
+([02-architecture.md](../02-architecture.md)),
 because it is the number that says whether this decision is being honoured or quietly abandoned.
 
 **Evidence is produced in an evidence workspace, never in the reviewed branch.** An advisory Run may
 write and execute inside its own Sandbox workspace in order to produce evidence; it MUST NOT patch the
 branch under review, MUST NOT push to it, and MUST NOT submit an approving review
-([19-repository-access.md](../02-architecture/19-repository-access.md)). Evidence is delivered as an
+([19-repository-access.md](../02-architecture.md)). Evidence is delivered as an
 attached artifact and, where the customer enables it, as a branch under the reserved prefix that the
 reviewer may fetch.
 

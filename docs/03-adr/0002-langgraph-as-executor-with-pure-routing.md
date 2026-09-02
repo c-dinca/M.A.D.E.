@@ -2,15 +2,15 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** UF-2, UF-5, [05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md)
+**Relates to:** UF-2, UF-5, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
 The system needs a graph executor with durable checkpointing and a human-interrupt mechanism, and it
 needs termination to be a property rather than an emergent behaviour
-([UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)). It also needs Runs
+([UF-2](../02-architecture.md)). It also needs Runs
 to be explainable and replayable after the fact
-([UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)).
+([UF-5](../02-architecture.md)).
 
 These two needs pull in opposite directions. A framework gives durable execution and interrupts for
 free, and costs control over how decisions are made and persisted. Writing it ourselves gives total
@@ -30,10 +30,10 @@ nodes, never inside a routing predicate. Guards are pure functions over data rea
 call.
 
 Purity is enforced by review and by a static check
-([04-engineering/03-coding-standards.md](../04-engineering/03-coding-standards.md)). A router that
+([07-deferred.md](../07-deferred.md)). A router that
 reads the clock is the specific defect to watch for: TTL expiry arrives as an event, and a router that
 calls `now()` decides differently on replay than it did in production, silently breaking
-[NFR-016](../01-product/04-non-functional-requirements.md).
+[NFR-016](../03-requirements.md).
 
 ## Alternatives considered
 
@@ -49,7 +49,7 @@ nothing else touches the loop.
 It lost on three counts, none of them about the state machine itself. Durable checkpointing and
 crash-resumption are the parts we would actually be writing, and they are unglamorous, easy to get
 subtly wrong, and directly load-bearing for
-[NFR-019](../01-product/04-non-functional-requirements.md). The human-interrupt mechanism is likewise
+[NFR-019](../03-requirements.md). The human-interrupt mechanism is likewise
 a real piece of engineering that the framework has already done. And the intake names LangGraph, so
 choosing otherwise spends the founder's learning budget on a component that is not the differentiator.
 The decisive observation is that the property we actually need is *deterministic routing*, and that is
@@ -65,7 +65,7 @@ the direction this ADR is pushing it anyway. At scale it is the correct answer.
 
 It lost on operational cost against the one-operator principle. A self-hosted Temporal cluster is a
 second system to run, monitor and upgrade — and it would breach the four-process ceiling
-([NFR-021](../01-product/04-non-functional-requirements.md)) immediately. Temporal Cloud is a hosted
+([NFR-021](../03-requirements.md)) immediately. Temporal Cloud is a hosted
 dependency an air-gapped customer cannot use, which conflicts with the product's positioning. Because
 routing is already pure and effects already sit behind handlers, adopting it later is mechanical
 rather than a rewrite, which makes deferral cheap.
@@ -84,7 +84,7 @@ forfeiting UF-5.
 
 Durable checkpointing and interrupts arrive without us writing them. Routing is exhaustively
 unit-testable with no database and no model. A historical event log can be replayed through current
-routing code to prove a fix ([09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)).
+routing code to prove a fix ([02-architecture.md](../02-architecture.md)).
 
 ### Negative
 
@@ -93,7 +93,7 @@ that must be migrated when it changes; a breaking framework change is a project 
 control. Debugging execution problems means understanding the framework's super-step model as well as
 our own state machine, which doubles the surface a new agent must learn. Some framework capabilities —
 dynamic `Send` fan-out in particular — are available and forbidden
-([05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md)), which
+([02-architecture.md](../02-architecture.md)), which
 requires ongoing discipline rather than being structurally impossible. And the purity rule is a
 convention that must be actively policed; nothing in the framework prevents someone from putting a
 database read in a conditional edge, and that mistake would be invisible until a replay test failed.
