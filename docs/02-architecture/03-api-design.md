@@ -47,9 +47,12 @@ the banned-synonym list.
 
 ## Authentication and authorisation
 
-A bearer API key per caller, hashed at rest, mapped to one of three roles. Roles exist even though v1
-is single-tenant because the personas have genuinely different needs and the security reviewer must
-be able to read the audit without holding a key that can start Runs.
+A bearer API key per caller, hashed at rest, mapped to a role, scoped to a tenant. Roles existed
+before tenancy did, because the personas have genuinely different needs and the security reviewer must
+be able to read the audit without holding a key that can start Runs. Tenancy did not replace that
+argument; it added a second axis, and the two are enforced independently — a role says *what* a
+principal may do, a tenant says *whose data* it may do it to
+([18-deployment-and-tenancy.md](18-deployment-and-tenancy.md)).
 
 | Role | Can |
 | --- | --- |
