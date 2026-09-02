@@ -1,8 +1,27 @@
 # ADR-0024 — A worksite is a bounded long-running campaign that creates Runs and measures progress on merged state
 
-**Status:** Accepted
+**Status:** **Suspended by the 2026-09 cut** ([ADR-0033](0033-one-verified-lane-one-judgement-lane.md)). Its path-claim mechanism is **superseded** by [ADR-0031](0031-optimistic-concurrency-not-exclusive-claims.md).
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-5](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0010](0010-termination-guards.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/07-worksites.md](../01-product/07-worksites.md), FR-095 to FR-103
+
+> **Suspended, not wrong.** A Show — a long-term maintenance campaign — is still the concept, and
+> [01-product.md](../01-product.md) keeps the term. What is deferred is the machinery this record
+> specifies: the survey-and-slice cycle, the four campaign ceilings, the campaign progress oracle,
+> templates, and multi-repository campaigns. v1 has one recipe and a person or a schedule triggering
+> Scenes; it does not have a campaign driver ([07-deferred.md](../07-deferred.md)).
+>
+> **One part of it is not suspended but reversed.** This record chose **exclusive path claims** and
+> recorded in its own negative section that they "will block legitimate work" and that an operator
+> "will experience it as the system refusing to do work it could obviously do".
+> [ADR-0031](0031-optimistic-concurrency-not-exclusive-claims.md) acts on that admission: Scenes run
+> in parallel, conflicts are detected at merge by the exact-match patch applier, and the loser
+> re-runs. This record's own revisit trigger — "the path-scope claim is observed blocking more work
+> than it protects" — is what was acted on.
+>
+> **Read this before rebuilding campaigns.** Two of its rules are the ones most likely to be lost and
+> hardest to re-derive: progress is measured by executing a command on the **default branch**, so it
+> moves only when a human merges; and delivered-but-unmerged Previews are **work in flight**, never
+> progress.
+**Relates to:** [UF-2](../02-architecture.md), [UF-5](../02-architecture.md), [ADR-0010](0010-termination-guards.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [07-deferred.md](../07-deferred.md), FR-095 to FR-103
 
 ## Context
 
@@ -13,7 +32,7 @@ restarts, upgrades and the reviewer's holiday.
 
 Nothing in the current specification models this. A Run is "one end-to-end execution of the state
 machine against one repository, from a request to a terminal state"
-([00-context/03-glossary.md](../00-context/03-glossary.md)), and the scale envelope assumes "a Run
+([01-product.md](../01-product.md)), and the scale envelope assumes "a Run
 duration of minutes". A worksite is the first entity in this system whose lifetime is longer than a
 deploy.
 
@@ -22,7 +41,7 @@ Two properties of the existing design are directly threatened, and they are the 
 **Termination.** Every bound in this repository is per Run: attempt caps, the progress oracle, the
 budget ceiling, the wall-clock TTL. A campaign that creates Runs is a loop *above* every one of those
 bounds. A worksite that keeps opening pull requests nobody merges, or keeps retrying slices that cannot
-pass, is the most direct route to [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)
+pass, is the most direct route to [UF-2](../02-architecture.md)
 that this architecture has ever contained — and it arrives dressed as the product working.
 
 **Truthfulness about progress.** The tempting progress metric is pull requests opened, because it is
@@ -38,7 +57,7 @@ objective into many Runs, in one lane, across one or more repositories in one te
 a named commit, whose output yields an integer count of remaining work: files not yet converted, lint
 violations outstanding, services still on the old framework. A worksite whose objective cannot be
 counted by a command is not a worksite. This is the work-class oracle rule
-([01-product/05-work-classes.md](../01-product/05-work-classes.md)) applied one level up, and it is
+([01-product.md](../01-product.md)) applied one level up, and it is
 what keeps "modernise this codebase" out.
 
 **Progress is measured on the default branch, not on opened pull requests** (FR-096). The progress
@@ -50,10 +69,10 @@ progress.
 Runs, wall-clock duration, and maximum concurrently open pull requests. Breaching any of them pauses
 the worksite and escalates; none of them may be raised while it is active. Raising a ceiling means
 editing the worksite configuration, which creates a new immutable version and is recorded — the same
-rule as Project configuration ([FR-005](../01-product/03-functional-requirements.md)).
+rule as Project configuration ([FR-005](../03-requirements.md)).
 
 **A worksite has its own progress oracle** (FR-098), by direct analogy with
-[`GUARD_PROGRESS`](../02-architecture/05-orchestration-and-termination.md#guard_progress). If the
+[`GUARD_PROGRESS`](../02-architecture.md). If the
 measured remaining count has not fallen across a declared number of consecutive completed cycles, the
 worksite pauses and escalates. A campaign that is not reducing its own count is thrashing at a larger
 scale, and the reason the per-Run guard exists applies unchanged.
@@ -68,7 +87,7 @@ worksites cannot hold overlapping path scopes in the same repository at the same
 claimant waits, visibly, and its waiting is a recorded state with a reason — not an invisible queue.
 
 **Worksite state is rows and an append-only worksite event log** (FR-101), folded the same way a Run's
-is ([09-audit-and-replay.md](../02-architecture/09-audit-and-replay.md)). It is not model memory, not a
+is ([09-audit-and-replay.md](../02-architecture.md)). It is not model memory, not a
 carried-over context, and not a summary an agent wrote. Nothing an agent concluded in one Run reaches
 another Run except as a named, digested artifact. This is what keeps Seam 7's prohibition on cross-Run
 learning intact while still letting a campaign survive a restart.
@@ -96,11 +115,11 @@ stop bounding anything. Delivery is per Run — one branch, one pull request, on
 four-hundred-Task Run produces one enormous unreviewable pull request, or needs a per-Task delivery
 mechanism that is a worksite by another name. And failure attribution collapses: with hundreds of
 Tasks in one Run, "which Task broke the suite" stops being answerable, which is exactly the objection
-[15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md) raises against parallel Tasks.
+[15-future-phase-seams.md](../02-architecture.md) raises against parallel Tasks.
 
 ### A schedule plus a work class, with no campaign entity — rejected
 
-A real case, and it is close to free: the scheduler already exists ([FR-082](../01-product/03-functional-requirements.md)),
+A real case, and it is close to free: the scheduler already exists ([FR-082](../03-requirements.md)),
 work classes already exist, and "run the TypeScript conversion class weekly against this repository"
 would produce the same pull requests over time. No new concept, no new ceilings, no new document.
 

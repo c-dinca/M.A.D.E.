@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-02
-**Relates to:** [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [ADR-0023](0023-advisory-findings-carry-evidence.md), [01-product/06-lanes.md](../01-product/06-lanes.md), FR-086, FR-087
+**Relates to:** [UF-3](../02-architecture.md), [ADR-0014](0014-verification-oracle-is-authoritative.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [ADR-0023](0023-advisory-findings-carry-evidence.md), [01-product.md](../01-product.md), FR-086, FR-087
 
 ## Context
 
@@ -10,7 +10,7 @@ Every document in this repository is written on one premise: a unit of work carr
 in advance, and that command's exit code decides whether the work succeeded
 ([ADR-0014](0014-verification-oracle-is-authoritative.md)). The premise is load-bearing.
 [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md) narrowed the product to work classes
-precisely so that the premise always holds, and [01-product/05-work-classes.md](../01-product/05-work-classes.md)
+precisely so that the premise always holds, and [01-product.md](../01-product.md)
 states the rule bluntly: work with no runnable oracle is not a work class, it is a wish.
 
 The founder's capability list breaks that premise in half. Some of the listed work has an oracle:
@@ -28,7 +28,7 @@ product rather than behind it.
 The failure to avoid is specific and it is not "shipping advisory work". It is **advisory output
 borrowing the credibility of verified output**: a comment rendered in the same typography as a proven
 finding, an escalation reported with the same confidence as an exit code, a dashboard averaging the two
-into one acceptance rate. That is [UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)
+into one acceptance rate. That is [UF-3](../02-architecture.md)
 arriving through the front door with the founder's permission.
 
 ## Decision
@@ -60,7 +60,7 @@ The rules that keep the two apart, each of which MUST be enforced in code and as
   ([ADR-0023](0023-advisory-findings-carry-evidence.md)).
 - Effectiveness reporting MUST be per lane and per class. A single blended acceptance rate across both
   lanes is forbidden, for the same reason cost per successful Run and cost per failed Run are reported
-  separately ([07-cost-control.md](../02-architecture/07-cost-control.md)).
+  separately ([07-cost-control.md](../02-architecture.md)).
 - Every bound the verified lane has, the advisory lane also has: budget admission before every model
   call, attempt caps, wall-clock TTL, sandbox isolation, and an event per effect. An advisory Run is
   cheaper, not freer.
@@ -74,8 +74,8 @@ be minimised. It is the sentence that makes the verified lane's guarantee mean s
 ### Admit no advisory work, keeping the oracle premise absolute — rejected
 
 This is the strongest case in the set, because it is the position the entire repository currently
-holds, argued at length in [01-product/05-work-classes.md](../01-product/05-work-classes.md) and
-[06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md). Its
+holds, argued at length in [01-product.md](../01-product.md) and
+[06-verification-and-truthfulness.md](../02-architecture.md). Its
 argument: the only property that does not degrade when the model degrades is the exit code. A system
 that fails 40% of the time and says so is usable; one that cannot tell which outputs are trustworthy is
 worse than useless. Admitting a class of work whose quality cannot be proven per Run reintroduces
@@ -95,7 +95,7 @@ reader decide how much to trust it. Reviewers are used to confidence scores, and
 easier to build and to explain than two.
 
 Rejected because a confidence score is a model output, and this architecture's central rule is that a
-model's opinion never decides anything ([UF-3](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)).
+model's opinion never decides anything ([UF-3](../02-architecture.md)).
 A score of 0.9 attached to an unproven claim is worse than no number: it looks like a measurement,
 it is not one, and it invites exactly the averaging that hides which outputs were checked. A boolean
 that means "a command ran and exited zero" cannot be faked; a float cannot be trusted.

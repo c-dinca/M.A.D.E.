@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** [08-context-and-retrieval.md](../02-architecture/08-context-and-retrieval.md), [07-cost-control.md](../02-architecture/07-cost-control.md)
+**Relates to:** [02-architecture.md](../02-architecture.md)
 
 ## Context
 
@@ -17,7 +17,7 @@ Attempt of every Task and its failure mode is the most common non-verification f
 
 Patches are search/replace blocks. The `SEARCH` text MUST match the target file byte-exactly and
 uniquely; anything else is a rejection with a structured error naming the file and the nearest
-candidate location ([FR-035](../01-product/03-functional-requirements.md)).
+candidate location ([FR-035](../03-requirements.md)).
 
 There is **no fuzzy matching**, no whitespace-insensitive comparison and no nearest-match application.
 A rejection is cheap, structured feedback and counts as an Attempt.

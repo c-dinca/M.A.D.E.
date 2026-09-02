@@ -1,171 +1,118 @@
-# M.A.D.E.
+# Scenio
 
-**M**ulti-**A**gent **D**evelopment **E**ngine — an environment in which a swarm of role-specialised
-agents lives inside a company's development infrastructure and continuously takes over the work that
-consumes developer time: dependency upgrades and the code the upgrade breaks, lint and type debt,
-mechanical migrations, long-running conversion campaigns, review of human pull requests, TODO debt, and
-change requests from people who do not have commit access.
+**Scenio does maintenance work that a command can prove, and a human approves the result.**
 
-It runs unattended, on the customer's infrastructure or on ours, and every change it delivers arrives
-as a branch and a pull request for a human to merge. It never merges anything itself.
+A CVE lands in a dependency. The upgrade that fixes it breaks four call sites. Scenio raises the
+dependency, fixes what broke, and the repository's own existing test suite decides whether it worked —
+then opens a pull request for a person to merge. It never merges anything itself.
 
-**Status: specification only. No application code exists yet.** This repository contains the
-architecture and product specification, the normative contracts, and the work queue. Implementation
-starts at [`PLAT-01`](docs/05-delivery/02-backlog.md).
+*the rehearsal is the work*
 
-> **The vision changed in September 2026** and the specification was rewritten around it. If you
-> remember this repository saying something different — single-tenant only, no chat, no web interface,
-> a run viewer rather than a console — read
-> [the record of what reversed](docs/00-context/06-vision-change-2026-09.md) first. Nothing was
-> deleted; the arguments that lost are retained where they were made.
+**Status: specification only. No code exists yet.**
 
-## The distinction everything rests on
+---
 
-The work divides into two categories with fundamentally different properties, and conflating them is
-the most damaging thing this system could do
-([docs/01-product/06-lanes.md](docs/01-product/06-lanes.md)).
+## What v1 is
 
-**The verified lane.** A command declared in advance decides the outcome: dependency upgrades,
-migrations, code fixes, test generation, codemods. The exit code is the arbiter. Nothing is called
-successful unless that command exits zero.
+One kind of work in each of two lanes, and nothing else
+([ADR-0033](docs/03-adr/0033-one-verified-lane-one-judgement-lane.md)):
 
-**The advisory lane.** No such command exists: reviewing a pull request, finding bugs, triaging TODO
-debt, turning a chat message into a change request. **There is no exit code for "is this review
-good".** So the agent proposes, a human decides, and quality is measured statistically over time.
+**Verified — dependency upgrades and CVE remediation.** A command declared before the work starts
+decides the outcome. The CVE disappears from the dependency tree, the suite stays green, and both are
+checkable by a machine.
 
-**Advisory output carries no correctness guarantee, and the interface says so in those words.** That is
-a product feature rather than a weakness: the verified lane's guarantee is only worth something if it is
-scoped honestly, and a suggestion rendered in the typography of a proof destroys both.
+**Judgement — review of a human's pull request, through evidence only.** Scenio writes the test that
+fails and demonstrates the problem, or it marks the comment unverified. It never posts an opinion
+formatted as a finding.
 
-**Review by evidence** is what keeps the advisory lane from being another comment generator. Wherever it
-is possible, an advisory agent produces the failing test that demonstrates the bug rather than a comment
-saying the change looks risky. A reader checks evidence in seconds; an opinion has to be re-derived.
-Where evidence is impossible, the finding is marked *unverified* and never dressed as a proof.
+**Judgement output carries no correctness guarantee, and the interface says so in those words.** The
+verified lane's guarantee is only worth something if it is scoped honestly.
 
-## The problem it addresses
+It runs as **one isolated instance per client, operated by us** — not a shared multi-tenant service
+([ADR-0029](docs/03-adr/0029-hosted-first-one-instance-per-client.md)). A client's work never sits in a
+row next to another client's, because it never sits in the same database.
 
-Engineering teams lose a large share of their capacity to work that is never the most important thing
-today and is always overdue. It is contractually required, low-margin, hard to staff and universally
-disliked, and scaling it by hiring stopped being sustainable.
+## The specification
 
-The existing tools split the problem and leave the expensive half in each case. Dependabot and Renovate
-open the pull request and leave a red one when the upgrade breaks the build. Claude Code and Cursor fix
-that well, and are interactive by design — nobody watches a package bump across two hundred
-repositories. Review tools post comments a reader has to re-derive. Migration campaigns live in a
-spreadsheet and stall when their champion changes team. And the person who noticed the defect often has
-no commit access, so the request dies in a chat thread.
+Eight documents. They can be read end to end, which is the point.
 
-**M.A.D.E. starts where the free tools stop and runs where the interactive tools cannot**: unattended,
-reactive, budgeted before each model call, with a complete audit trail. See
-[problem and vision](docs/00-context/01-problem-and-vision.md).
-
-## Architecture at a glance
-
-Four long-running process kinds — API, worker, PostgreSQL, object store — plus ephemeral Sandboxes
-created per Run. One artifact, two deployment modes: a service we host for many tenants, and an
-installation a customer operates. **Which one v1 targets first is an open question**, deliberately
-([OQ-01](docs/05-delivery/02-backlog.md#open-questions)).
-
-- **Execution** happens under a kernel that is not the host kernel, with no credentials and no network
-  during verification. If the isolation runtime is unavailable, the system refuses to run rather than
-  falling back. Multi-tenant hosting raises this requirement rather than lowering it, and the boundary
-  adequate for it is [OQ-10](docs/05-delivery/02-backlog.md#open-questions).
-  → [execution isolation](docs/02-architecture/04-execution-isolation.md)
-- **Repository access** is the system's own scoped application installation, never a human's token, with
-  a permission envelope that can be printed, tested and revoked by the customer in one action without
-  our cooperation. → [repository access](docs/02-architecture/19-repository-access.md)
-- **Control flow** is a state machine executed by LangGraph, with all routing decided by pure predicates
-  no model can influence. Six guards make an unbounded Run structurally impossible; a worksite adds four
-  declared ceilings and a campaign progress oracle for the same reason one level up.
-  → [orchestration and termination](docs/02-architecture/05-orchestration-and-termination.md)
-- **Residency** is a property of the control plane — durable ingestion, durable schedules, visible
-  queues — **not** long-lived agents holding context. No agent outlives a Run, because a Run that cannot
-  be explained from its own record cannot be sold to the person who has to approve it.
-  → [persistence and concurrency](docs/02-architecture/17-persistence-and-concurrency.md)
-- **Success** in the verified lane is the exit code of a command declared in advance and immutable
-  thereafter. → [verification and truthfulness](docs/02-architecture/06-verification-and-truthfulness.md)
-- **Progress** on a campaign is measured on **merged state**, by running a declared command on the
-  default branch. Delivered but unmerged pull requests are reported as work in flight and never as
-  progress. → [worksites](docs/01-product/07-worksites.md)
-- **State** is a git branch plus three append-only event logs in Postgres — Run, worksite, request —
-  from which everything can be replayed and audited.
-  → [audit and replay](docs/02-architecture/09-audit-and-replay.md)
-- **Effectiveness** is reported honestly: acceptance rate, cost per merged pull request, human
-  intervention rate and time to merge, per lane and per class, computed from the event log by published
-  queries, with the count each figure came from — and "insufficient data" rather than a flattering
-  percentage over three samples.
-  → [the console](docs/01-product/09-web-interface-and-admin-console.md)
-
-The five failures this design treats as project-ending, and the mechanism that prevents each, are named
-in the [system overview](docs/02-architecture/01-system-overview.md#the-five-unforgivable-failures).
-They are what shapes the rest.
-
-## Where to start
-
-| You are | Start here |
+| Document | What is in it |
 | --- | --- |
-| An agent about to do work | [`AGENTS.md`](AGENTS.md), then [the backlog](docs/05-delivery/02-backlog.md) |
-| Wondering why this document changed | [the 2026-09 vision change](docs/00-context/06-vision-change-2026-09.md) |
-| Evaluating the design | [system overview](docs/02-architecture/01-system-overview.md), then the [ADRs](docs/03-adr/README.md) |
-| Trying to understand the product boundary | [lanes](docs/01-product/06-lanes.md), then [scope and personas](docs/01-product/01-scope-and-personas.md) |
-| Reviewing security | [security and compliance](docs/02-architecture/13-security-and-compliance.md), then [execution isolation](docs/02-architecture/04-execution-isolation.md) and [repository access](docs/02-architecture/19-repository-access.md) |
-| Deciding what to build next | [roadmap](docs/05-delivery/01-roadmap.md) and the [open questions](docs/05-delivery/02-backlog.md#open-questions) |
-| Looking for a specific decision | [ADR index](docs/03-adr/README.md) |
-| Wondering whether to trust this specification | [evidence and confidence](docs/00-context/05-evidence-and-confidence.md) |
-| Implementing against an interface | [`contracts/`](contracts/README.md) — normative, **and currently behind the prose** |
+| [01-product.md](docs/01-product.md) | The problem, who it is for, the non-goals, and the Scenio brand and vocabulary |
+| [02-architecture.md](docs/02-architecture.md) | The loop, the three actors, isolation, concurrency, the Prompt Book, Box Office |
+| [03-requirements.md](docs/03-requirements.md) | 25 functional and 10 non-functional requirements, and the twelve surviving stories |
+| [04-contracts.md](docs/04-contracts.md) | The normative contracts, and `CON-01`–`CON-06`: what has to change in them first |
+| [05-roadmap.md](docs/05-roadmap.md) | Three milestones, each independently demonstrable |
+| [06-open-questions.md](docs/06-open-questions.md) | The three that stay open, and what flips if each does |
+| [07-deferred.md](docs/07-deferred.md) | Everything cut, one line and a reason each |
+| [Decision records](docs/03-adr/README.md) | All 33 ADRs, kept. Decision history is cheap and losing it is expensive |
 
-Full index with reading paths: [`docs/README.md`](docs/README.md).
+**Start with** [01-product.md](docs/01-product.md) for the vocabulary — every theatre term carries its
+plain description — then [02-architecture.md](docs/02-architecture.md).
 
-## Repository layout
+`AGENTS.md` is the operating rules for an agent about to do work. Read it first if that is you.
 
-```
-AGENTS.md      operating rules — the first thing an agent reads
-contracts/     NORMATIVE machine-readable contracts: state machine, OpenAPI, DDL, JSON Schemas
-docs/          the specification: context, product, architecture, ADRs, engineering, delivery
-```
+## The vocabulary, in one line each
 
-Application code will live under `made/` per
-[the normative repo structure](docs/04-engineering/01-repo-structure.md).
+The theatre term is the title; the plain description always follows it. Full table in
+[01-product.md](docs/01-product.md).
 
-## Open questions
+**House** a connected repository · **Show** a long-term maintenance campaign · **Scene** one task
+within a Show · **Rehearsal Room** the isolated execution environment · **Dress Rehearsal** the
+verification run · **Preview** the pull request · **Opening Night** the merge · **The Call** the human
+approval gate · **Held** a Scene waiting for a person · **Dropped Cue** a Scene that failed ·
+**Booth** the console · **Prompt Book** the audit log · **Box Office** the four effectiveness numbers.
 
-Decisions that are genuinely unresolved are marked in place rather than guessed at. There are **more of
-them than before the vision change**, which is the honest state of a product whose scope widened three
-weeks ago. Five can only be answered by the founder.
+Not *Production* for a campaign. In a developer tool that word means the live environment, and the
+ambiguity produces incidents.
 
-**OQ-01** — which deployment shape v1 targets first, hosted or self-hosted. Both are supported and
-neither is assumed; one has to be first, because building and supporting both at once is not affordable
-for a single maintainer.
+## The three open questions
 
-**OQ-19** — whether generated planning returns to the critical path so the chat front door can serve
-requests no work class covers. **The largest open question in the specification**, and the one genuine
-contradiction the vision change created: the narrow front door is what ships, and a request it cannot
-serve is declined with reason `requires_generated_plan` so that the frequency of the problem is measured
-before the question is answered.
+They are commercial bets, not technical ones, and each would take part of the specification with it if
+it flips. [06-open-questions.md](docs/06-open-questions.md) says exactly how much.
 
-**OQ-10** — whether the execution boundary is sufficient for running several tenants' code on one host.
-Open in the direction of a *stronger* boundary: if it is insufficient, hosted operation is suspended
-rather than the boundary weakened.
+**OQ-11** — is dependency and CVE work the right first lane, or are large migrations? *Provisional:
+dependencies.* If it flips, M2's exit criteria change and campaigns return from Deferred.
 
-**OQ-09** — how a dependency upgrade obtains its new package version, given that Sandboxes have no
-network. Blocks the first sellable capability, and must not be solved by giving the Sandbox network
-access.
+**OQ-15** — does the security-perimeter argument lead, or follow? *Provisional: it follows.* If it
+flips, hosted-first reverses and self-hosted becomes first.
 
-**OQ-11, OQ-12, OQ-18** — which single worksite, which single advisory capability, and which console
-subset go first. These exist to force one choice each rather than all of them, because the largest risk
-this vision change created is that six capabilities ship as six half-things.
+**OQ-19** — is a narrow chat entry point enough, or does it need to accept any request? *Provisional:
+narrow.* This is a real reduction from the original vision, not a postponement.
 
-**OQ-03 is resolved**: existing repositories, in declared work classes
-([ADR-0020](docs/03-adr/0020-technical-debt-remediation-as-the-v1-product.md)). The 2026-09 change
-widened what the system does *to* existing repositories; it did not reopen greenfield.
+---
 
-All of them, with what each blocks:
-[open questions](docs/05-delivery/02-backlog.md#open-questions).
+## The working rule
+
+> **No new commits in `docs/` until code runs against a real repository.**
+
+The specification is finished. Every new document from here is a day Scenio does not exist.
+
+This is a rule the owner has set for himself, and it is the part that makes the cut hold rather than
+being a moment that passes. Three things are worth knowing about it:
+
+**It is not a rule against thinking.** It is a rule against writing thinking down instead of building.
+The eight documents are enough to build M1 from. If something in them is unclear, that is a defect to
+fix in place, not a reason for a ninth document.
+
+**An ADR is the exception.** A decision that is not written down is a decision that gets made again,
+usually differently. Recording one costs a page and saves a week
+([docs/03-adr/README.md](docs/03-adr/README.md)).
+
+**Growth is depth inside the eight, not new files.** When M1 works and M2 needs detail the
+architecture document does not have, it goes into the architecture document.
 
 ## What this repository does not claim
 
-Nothing here has ever run. The contracts parse, apply to a real database and reject hostile inserts;
-everything the vision change added is prose whose contracts have not landed yet, and the specification
-says so rather than implying otherwise
-([evidence and confidence](docs/00-context/05-evidence-and-confidence.md)). Numbers with no basis are
-marked `TBD` with the measurement that would set them, rather than given a plausible value.
+**Nothing here has ever run.** The contracts parse, apply to a real database and reject hostile
+inserts — but they describe a *larger* product than v1 and predate three of the decisions above, so an
+agent implementing from them today would build the wrong thing. `CON-01`–`CON-06` fix that and they
+land first ([04-contracts.md](docs/04-contracts.md)).
+
+**Two numbers are `TBD` and stay that way.** Box Office's four measures and the re-run rate have
+defined measurements and no values, because none has been observed. A plausible invented figure would
+be indistinguishable from a measured one later, and Box Office is shown to clients.
+
+**Twenty questions were closed and three were kept.** The three are exposure the owner chose to keep
+visible. A specification claiming total certainty about a product that has not started would be the
+dishonest version.

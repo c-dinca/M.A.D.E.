@@ -1,8 +1,25 @@
 # ADR-0006 — Verification runs with no network; dependencies are baked into a pinned image
 
-**Status:** Accepted
+**Status:** **Superseded by [ADR-0030](0030-container-isolation-with-egress-allowlist.md)**, 2026-09-02.
 **Date:** 2026-08-05
-**Relates to:** UF-1, UF-4, [04-execution-isolation.md](../02-architecture/04-execution-isolation.md)
+**Relates to:** UF-1, UF-4, OQ-09, [02-architecture.md](../02-architecture.md)
+
+> **Superseded because its offline conclusion made the only v1 capability impossible.** OQ-09 — how a
+> dependency upgrade obtains its new package version with no network — had no affordable answer under
+> this decision, and it blocked the first sellable work class. ADR-0030 replaces the no-network rule
+> with **deny-by-default egress and a declared allowlist** containing the package registries a recipe
+> needs, and every decision recorded.
+>
+> **This record's central claim is still true and is what was given up:** an environment with no
+> network has no allowlist to bypass, no DNS exfiltration channel and no metadata endpoint to reach.
+> ADR-0030 accepts that cost explicitly rather than disputing it.
+>
+> **Its second rationale is lost with it and is worth noticing separately:** baking dependencies into a
+> pinned image removed the largest component of execution wall-clock and removed remote package
+> installation — the largest supply-chain surface in agentic coding — from the runtime entirely. Per-Scene
+> wall-clock will therefore be worse, and a poisoned dependency is back in the threat model.
+>
+> Read this before widening any allowlist. It is the argument for keeping it narrow.
 
 ## Context
 
@@ -13,21 +30,21 @@ That approach brings in the largest attack surface in the whole design at exactl
 Package installation executes arbitrary vendor code with network access, inside the same environment
 holding the customer's source. It is the mechanism behind the most common real-world supply-chain
 compromises, and it hands an injected instruction a live egress channel
-([UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures)).
+([UF-4](../02-architecture.md)).
 
 It is also, separately, the dominant term in Sandbox wall-clock time and therefore in Sandbox cost
-([00-context/04-business-model.md](../00-context/04-business-model.md)).
+([01-product.md](../01-product.md)).
 
 ## Decision
 
 Verification Sandboxes run with networking disabled entirely — no interface except loopback
-([FR-057](../01-product/03-functional-requirements.md),
-[NFR-006](../01-product/04-non-functional-requirements.md)).
+([FR-057](../03-requirements.md),
+[NFR-006](../03-requirements.md)).
 
 Dependencies are installed at **image build time**, performed by the operator outside any Run, against
-the Project's declared allowlist, and recorded ([FR-061](../01-product/03-functional-requirements.md)).
-The image is pinned by digest on the Project ([FR-008](../01-product/03-functional-requirements.md))
-and the digest is recorded on every Run ([FR-060](../01-product/03-functional-requirements.md)).
+the Project's declared allowlist, and recorded ([FR-061](../03-requirements.md)).
+The image is pinned by digest on the Project ([FR-008](../03-requirements.md))
+and the digest is recorded on every Run ([FR-060](../03-requirements.md)).
 
 A Task requiring a dependency that is not in the image fails verification and escalates to a human,
 who rebuilds the image. There is no run-time installation path, and adding one requires a superseding
@@ -46,7 +63,7 @@ a real and common request.
 
 It lost on the ratio of surface to benefit. That design requires a proxy, a resolver, a credential
 mechanism and a cache — four components to build, operate and defend, against
-[NFR-021](../01-product/04-non-functional-requirements.md) — to permit a workflow whose safe form is
+[NFR-021](../03-requirements.md) — to permit a workflow whose safe form is
 "a human approves a dependency change", which is what a reviewer would insist on anyway. Disabling the
 network removes the entire class: there is no allowlist to bypass, no DNS channel to tunnel through,
 no metadata endpoint to reach and no proxy to misconfigure. A control that does not exist cannot be

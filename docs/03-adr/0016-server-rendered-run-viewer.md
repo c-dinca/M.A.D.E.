@@ -2,7 +2,7 @@
 
 **Status:** **Superseded by [ADR-0028](0028-web-console-as-a-product-surface.md)**, 2026-09-02.
 **Date:** 2026-08-05
-**Relates to:** FR-067, NFR-021, [12-observability-and-slos.md](../02-architecture/12-observability-and-slos.md)
+**Relates to:** FR-067, NFR-021, [02-architecture.md](../02-architecture.md)
 
 > **Superseded on scope, not on technology.** The founder has asked for a web interface with a worksite
 > monitor, an admin console and an effectiveness dashboard, so this record's premise — that the
@@ -36,7 +36,7 @@ Pages in v1: Run list, Run detail (event timeline with per-step cost, Tasks with
 artifacts, spend against ceiling), Project list and detail, and an approval action.
 
 Display rules are product requirements, not styling
-([06-verification-and-truthfulness.md](../02-architecture/06-verification-and-truthfulness.md)):
+([02-architecture.md](../02-architecture.md)):
 verification status renders as *verified*, *failed verification* or *not verified*; a Run in
 `AWAIT_HUMAN` renders as "waiting for approval" with its reason, never as a progress spinner; unknown
 values render as "unknown", never as zero.
@@ -71,9 +71,9 @@ security review, where being able to show the audit timeline on screen matters.
 ### Positive
 
 One process, one deployment artifact, one language, one dependency tree
-([NFR-021](../01-product/04-non-functional-requirements.md)). Templates are testable in the same test
+([NFR-021](../03-requirements.md)). Templates are testable in the same test
 suite as the API. Nothing to build at install time, which protects the bootstrap budget in
-[NFR-020](../01-product/04-non-functional-requirements.md). The truthful-rendering rules are enforced
+[NFR-020](../03-requirements.md). The truthful-rendering rules are enforced
 by ordinary server-side tests rather than by a browser harness.
 
 ### Negative

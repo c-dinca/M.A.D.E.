@@ -2,17 +2,17 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** FR-032, [05-orchestration-and-termination.md](../02-architecture/05-orchestration-and-termination.md)
+**Relates to:** FR-032, [02-architecture.md](../02-architecture.md)
 
 ## Context
 
 The buyer's security function holds a veto over installation
-([00-context/02-ecosystem-and-stakeholders.md](../00-context/02-ecosystem-and-stakeholders.md)). What
+([01-product.md](../01-product.md)). What
 converts that veto into an approval is not the quality of the output; it is the guarantee that nothing
 reaches their repository without a person deciding.
 
 There is also an internal reason. Planning is cheap and implementation is not
-([07-cost-control.md](../02-architecture/07-cost-control.md)), so a gate between them is the highest-
+([02-architecture.md](../02-architecture.md)), so a gate between them is the highest-
 leverage point at which a human can prevent wasted spend on a misunderstood request.
 
 The engineering question is how a waiting Run is represented. A Run may wait for hours, and holding a
@@ -26,7 +26,7 @@ commit.
 
 Two gates in v1. **Delivery approval is mandatory and not configurable**: no branch is pushed and no
 pull request opened without a recorded approval
-([FR-032](../01-product/03-functional-requirements.md)). **Plan approval is per Project**, default on
+([FR-032](../03-requirements.md)). **Plan approval is per Project**, default on
 for a new Project.
 
 An approval records the actor, the decision, the reason, the State it unblocked, and **the artifact
@@ -58,7 +58,7 @@ directly improves throughput.
 Rejected because an approval must be attributable to an actor and bound to the artifact digests they
 saw. A chat button is weakly attributable relative to an API key and hard to bind to displayed
 content. Noted as a deliberate non-integration in
-[14-integrations.md](../02-architecture/14-integrations.md).
+[02-architecture.md](../02-architecture.md).
 
 ### Blocking the process while waiting — rejected
 
@@ -83,7 +83,7 @@ with what was shown.
 
 Wall-clock time to delivery is dominated by human availability, so the system cannot claim end-to-end
 autonomy and a demo looks slower than a competitor's. Resuming costs a Sandbox recreation, adding
-latency at every gate ([NFR-001](../01-product/04-non-functional-requirements.md) applies twice per
+latency at every gate ([NFR-001](../03-requirements.md) applies twice per
 Run rather than once). The approval TTL will occasionally abort work someone intended to approve,
 which is annoying and correct. And a Run parked for approval is easy to forget, so the viewer must
 make parked Runs prominent — an interface obligation created by this decision.

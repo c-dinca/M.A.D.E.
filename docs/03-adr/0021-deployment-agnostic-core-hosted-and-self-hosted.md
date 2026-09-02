@@ -1,15 +1,35 @@
 # ADR-0021 — One deployment-agnostic core serving both self-hosted and hosted multi-tenant operation
 
-**Status:** Accepted
+**Status:** **Superseded by [ADR-0029](0029-hosted-first-one-instance-per-client.md)**, 2026-09-02 — the same day it was accepted.
 **Date:** 2026-09-02
 **Supersedes:** [ADR-0013](0013-single-tenant-self-hosted-v1.md)
-**Relates to:** OQ-01, OQ-10, [UF-1](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [18-deployment-and-tenancy.md](../02-architecture/18-deployment-and-tenancy.md), [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)
+
+> **Superseded within hours, by the answer to the question it left open.** This record decided that
+> both deployment shapes are supported from one core and left *which ships first* as OQ-01. The
+> founder answered OQ-01 with **hosted first, one isolated instance per client, no shared
+> multi-tenant runtime** — which removes the premise this decision was reasoning from.
+>
+> **What is reversed:** the multi-tenancy machinery. With one instance per client there is no shared
+> runtime, so `tenant_id NOT NULL`, row-level security, tenant resolution from the principal and
+> tenant prefixing are unnecessary. They are **removed rather than deferred**
+> ([ADR-0029](0029-hosted-first-one-instance-per-client.md)).
+>
+> **What survives, and is why this record still matters:** its central argument. A shared runtime
+> needs the whole enforced boundary or nothing, because a nullable tenant column creates the
+> appearance of isolation with none of the substance. ADR-0029 does not weaken that argument — it
+> avoids needing it, by separating instances instead. If a shared tier is ever wanted, **this is the
+> design to revive, in full**, not a partial version of it.
+>
+> Its negative section also predicted exactly the cost that made this reversal attractive: "every
+> query and index gets wider, and every mistake gets quieter", and "single-tenant deployments pay for
+> a boundary they do not use".
+**Relates to:** OQ-01, OQ-10, [UF-1](../02-architecture.md), [UF-4](../02-architecture.md), [18-deployment-and-tenancy.md](../02-architecture.md), [15-future-phase-seams.md](../02-architecture.md)
 
 ## Context
 
 [ADR-0013](0013-single-tenant-self-hosted-v1.md) chose a single-tenant, self-hosted deployment for v1
 and forbade the mechanisms multi-tenancy needs: no tenant table, no tenant column, no row-level
-security, no billing. Seam 2 in [15-future-phase-seams.md](../02-architecture/15-future-phase-seams.md)
+security, no billing. Seam 2 in [15-future-phase-seams.md](../02-architecture.md)
 recorded the migration and instructed agents not to build it. That instruction was correct under the
 decision it served.
 
@@ -47,7 +67,7 @@ Rules that follow, each enforceable:
   works self-hosted, requires an ADR naming the reason. Configuration may disable a capability in a
   deployment; the code may not know which mode it is in outside `made/config/`.
 - One tenant's execution MUST occupy its own Sandbox. Sandboxes were already per-Run and never reused
-  ([04-execution-isolation.md](../02-architecture/04-execution-isolation.md)); this decision makes that
+  ([04-execution-isolation.md](../02-architecture.md)); this decision makes that
   property load-bearing for tenant separation rather than only for Run hygiene.
 - Which mode **v1 targets first** is not decided here and MUST NOT be assumed by any document or
   backlog item. It is OQ-01.

@@ -1,14 +1,32 @@
 # ADR-0025 — A chat request is brokered into an entitled work class or declined; it never becomes a Run directly
 
-**Status:** Accepted
+**Status:** **Suspended by the 2026-09 cut** ([ADR-0033](0033-one-verified-lane-one-judgement-lane.md)).
 **Date:** 2026-09-02
-**Relates to:** [UF-2](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [UF-4](../02-architecture/01-system-overview.md#the-five-unforgivable-failures), [ADR-0011](0011-durable-human-approval-gates.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [01-product/08-chat-front-door.md](../01-product/08-chat-front-door.md), OQ-19, OQ-20, OQ-22, FR-106 to FR-114
+
+> **Suspended: Front of House — the chat entry point — is deferred**
+> ([07-deferred.md](../07-deferred.md)). Nothing here is being built in v1.
+>
+> **But its central argument is live, and it is what OQ-19 turns on.** This record identified that
+> "chat as a front door to declared work" and "chat as a front door to arbitrary change" are two
+> different products behind one sentence, that they look identical in a demo, and that they diverge
+> the first time somebody asks for something no recipe fits. The founder has accepted the narrow
+> version and made it a selling rule: **never demonstrate the chat entry point without saying in the
+> same sentence that the list of maintenance types is closed.** That rule comes from this record.
+>
+> The `requires_generated_plan` decline reason and its indexing also survive the suspension in
+> intent: when Front of House is built, that reason is the instrument that measures how often the
+> narrow door is insufficient, which is what settles OQ-19.
+>
+> Read this before building any chat integration. Its entitlement model — an administered mapping,
+> never channel membership — and its posting allowlist are the parts that stop it becoming an
+> exfiltration channel.
+**Relates to:** [UF-2](../02-architecture.md), [UF-4](../02-architecture.md), [ADR-0011](0011-durable-human-approval-gates.md), [ADR-0020](0020-technical-debt-remediation-as-the-v1-product.md), [07-deferred.md](../07-deferred.md), OQ-19, OQ-20, OQ-22, FR-106 to FR-114
 
 ## Context
 
 The founder wants a non-developer to describe a change in Discord, Teams or Slack and get a pull
 request. That capability is absent from the specification, and it is absent on purpose:
-[14-integrations.md](../02-architecture/14-integrations.md) refuses issue trackers as a Run trigger
+[14-integrations.md](../02-architecture.md) refuses issue trackers as a Run trigger
 because "an external system creating Runs means an external system spending budget", refuses chat
 approvals because an approval must be bound to the artifact digests an attributable actor saw, and
 Seam 6 forbids any outbound path from the control plane to a customer-configured destination. A chat
@@ -61,7 +79,7 @@ through the same budget admission as every other model call (FR-110).
 
 **Ambiguity is declined, never guessed** (FR-111). If triage cannot determine the target repository,
 the class, or a required parameter after its clarification allowance, the request is declined. This is
-[FR-029](../01-product/03-functional-requirements.md)'s rule applied at the front door.
+[FR-029](../03-requirements.md)'s rule applied at the front door.
 
 **Approval does not move to chat.** A recorded approval requires an attributable actor and the artifact
 digests that actor saw ([ADR-0011](0011-durable-human-approval-gates.md)). v1 posts a link; the
@@ -77,14 +95,14 @@ access by asking for a change.
 the class invoked, the outcome, cost against the requester's allowance, a pull-request URL, and
 finding *counts*. Source code, patch content, verification output, repository paths and finding bodies
 MUST NOT be posted by default. Chat is a third party under
-[13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md)'s classification, so
+[13-security-and-compliance.md](../02-architecture.md)'s classification, so
 posting C2 material into it is an egress decision, recorded as one, and disableable per deployment.
 
 ## Alternatives considered
 
 ### No chat front door; the customer calls the API from their own automation — rejected
 
-This is the position [14-integrations.md](../02-architecture/14-integrations.md) currently holds and its
+This is the position [14-integrations.md](../02-architecture.md) currently holds and its
 case is strong. It keeps authorisation entirely on the customer's side: they decide who may trigger
 what, using their own identity system, and we never hold a mapping from a chat handle to a spend
 authority. It adds no inbound surface, no outbound egress path, and no new adversary. A customer who
@@ -144,7 +162,7 @@ work class to build next.
 
 ### Negative — mandatory
 
-**Three refusals in [14-integrations.md](../02-architecture/14-integrations.md) are reversed at once**:
+**Three refusals in [14-integrations.md](../02-architecture.md) are reversed at once**:
 an external system may now trigger work, the control plane now has an outbound path to a
 customer-configured destination, and there is an inbound ingress surface. Each was refused for a stated
 reason, and the reasons have not become wrong — they have been overruled by a product requirement. The
@@ -158,7 +176,7 @@ inaccurate.
 
 **A new adversary joins the threat model.** A chat participant is an untrusted author of text that
 reaches a model, and unlike repository content they are interactive and can iterate against the
-triage. [13-security-and-compliance.md](../02-architecture/13-security-and-compliance.md) gains
+triage. [13-security-and-compliance.md](../02-architecture.md) gains
 adversary A6, and the entitlement check is the only thing between a channel guest and a spend.
 
 **We now hold a mapping from human identities to spend authority**, which is a small identity system

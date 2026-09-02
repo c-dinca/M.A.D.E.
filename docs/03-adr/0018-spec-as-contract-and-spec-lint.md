@@ -2,7 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-08-05
-**Relates to:** [04-engineering/06-ci-cd.md](../04-engineering/06-ci-cd.md), [`/contracts/`](../../contracts/)
+**Relates to:** [07-deferred.md](../07-deferred.md), [`/contracts/`](../../contracts/)
 
 ## Context
 
@@ -32,10 +32,10 @@ It asserts:
 3. Every internal Markdown link resolves, including heading anchors.
 4. Every `FR-###` and `NFR-###` referenced anywhere exists, and every requirement defined is
    referenced by at least one test marker.
-5. No banned synonym from [00-context/03-glossary.md](../00-context/03-glossary.md#banned-synonyms)
+5. No banned synonym from [01-product.md](../01-product.md)
    appears in an identifier, an API field name or a database column.
 6. Every `OQ-##` marked inline appears in the open-questions table in
-   [05-delivery/02-backlog.md](../05-delivery/02-backlog.md#open-questions), and every **unresolved** row
+   [06-open-questions.md](../06-open-questions.md), and every **unresolved** row
    in that table is marked inline somewhere. Rows struck through as resolved are exempt from the second
    direction: they are retained as a record, and their inline block is removed by the decision that
    closed them.
@@ -67,7 +67,7 @@ Rejected on ordering. Agents implement *from* the contract, so the contract must
 does — a generated contract cannot be the input to the work that generates it. Contract-first also
 makes an interface change a reviewable, standalone unit that lands before its consumers, which is what
 allows several agents to work in parallel
-([04-engineering/05-git-and-review-workflow.md](../04-engineering/05-git-and-review-workflow.md)). The
+([AGENTS.md](../../AGENTS.md)). The
 compromise adopted is contract-first plus a conformance test that fails when the implementation
 diverges — same guarantee, correct direction.
 
