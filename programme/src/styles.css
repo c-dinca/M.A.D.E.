@@ -142,6 +142,7 @@ a:hover {
   line-height: 0.86;
   letter-spacing: -0.05em;
   color: var(--paper);
+  white-space: nowrap;
 }
 
 .wordmark .i {
