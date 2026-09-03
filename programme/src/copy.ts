@@ -73,7 +73,7 @@ export const play: {
       fig: "06",
       title: "First patch. The suite you already have says no.",
       body: "That is the useful failure. The log keeps the exit code. Cleaning it out would be lying.",
-      status: "Dress Rehearsal",
+      status: "Failed",
       tone: "fail",
       diff: {
         file: "pyproject.toml",
