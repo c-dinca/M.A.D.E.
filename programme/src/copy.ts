@@ -162,3 +162,34 @@ export const close = {
   tag: "the rehearsal is the work",
   note: "Not a chat product. Not an IDE. Not feature work. A repository with no suite is refused at the door.",
 };
+
+export const actors = {
+  stage: { name: "Stage Manager", job: "orchestrator. code." },
+  crew: { name: "Crew", job: "makes the change" },
+  prompter: { name: "Prompter", job: "reviews through evidence" },
+  you: { name: "You", job: "The Call" },
+};
+
+export const viz = {
+  cveKicker: "lockfile",
+  cveRoot: "payments-api",
+  cveCaption: "protobuf, three edges down",
+  cvePr: "dependabot #412",
+  cveBuild: "build failed",
+  cheapBot: "opened",
+  cheapEditor: "the editor",
+  cheapWait: "waiting",
+  cheapComments: "unread",
+  afternoonKicker: "this afternoon",
+  files: ["pyproject.toml", "billing/legacy.py", "grpc_gen.py"],
+  roomTitle: "Rehearsal Room",
+  roomMeta: "credentials=0   egress=allowlist",
+  packets: "packets bounce. nothing leaves that was not named.",
+  recipeName: "dependency-upgrade",
+  recipeSteps: ["raise the pin", "repair call sites", "run the declared command"],
+  modelCalls: "model calls  0",
+  cannotMerge: "cannot merge",
+  houseYours: "your House",
+  houseOther: "another client",
+  wall: "no shared row",
+};

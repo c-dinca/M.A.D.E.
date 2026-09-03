@@ -1,5 +1,7 @@
 import type { PlayStep } from "../copy";
 import { play } from "../copy";
+import CastRail, { activeForFig } from "./viz/CastRail";
+import StepViz from "./viz/StepViz";
 
 type Props = {
   step: PlayStep;
@@ -13,7 +15,9 @@ export default function Frame({ step }: Props) {
         <span className="frame-house">{play.house}</span>
         <span className={`pill ${step.tone}`}>{step.status}</span>
       </div>
+      <CastRail active={activeForFig(step.fig)} />
       <p className="frame-scene">{play.scene}</p>
+      <StepViz step={step} />
       {step.diff ? (
         <div className="diff">
           <p className="diff-file">{step.diff.file}</p>
