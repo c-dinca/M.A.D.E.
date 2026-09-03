@@ -8,9 +8,9 @@
   --muted: #8a8a93;
   --rule: rgba(22, 21, 19, 0.14);
   --fail: #b42318;
-  --display: "Bodoni Moda", "Didot", "Bodoni MT", serif;
-  --sans: "IBM Plex Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --mono: "IBM Plex Mono", "IBM Plex Sans", ui-monospace, monospace;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --sans: "Figtree", "Segoe UI", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
 * {
@@ -32,8 +32,8 @@ body {
   background: var(--black);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: 1.0625rem;
-  line-height: 1.65;
+  font-size: 1.25rem;
+  line-height: 1.55;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
 }
@@ -69,9 +69,8 @@ a:hover {
 .rail {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.6875rem;
-  font-weight: 400;
-  letter-spacing: 0.16em;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
   text-transform: lowercase;
   color: var(--muted);
   line-height: 1.4;
@@ -138,11 +137,12 @@ a:hover {
   margin: 0 0 1.4rem;
   font-family: var(--display);
   font-optical-sizing: auto;
-  font-weight: 500;
-  font-size: clamp(4.4rem, 14vw, 9.25rem);
-  line-height: 0.78;
-  letter-spacing: -0.035em;
+  font-weight: 800;
+  font-size: clamp(4.2rem, 12vw, 7.5rem);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
   color: var(--paper);
+  white-space: nowrap;
 }
 
 .wordmark .i {
@@ -163,17 +163,12 @@ a:hover {
 
 .bill {
   margin: 0;
-  max-width: 28rem;
-  font-family: var(--mono);
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  color: #c8c4bb;
-  font-weight: 400;
-}
-
-.bill em {
-  font-style: normal;
+  max-width: 22rem;
+  font-family: var(--sans);
+  font-size: 1.45rem;
+  line-height: 1.4;
   color: var(--paper);
+  font-weight: 500;
 }
 
 .rule-amber {
@@ -188,20 +183,10 @@ a:hover {
 
 .house-foot {
   margin-top: 2.2rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  color: #5c5c64;
-}
-
-.invite {
-  margin: 1.35rem 0 0;
   font-family: var(--sans);
-  font-size: 1.02rem;
-  font-style: italic;
-  color: #d7d2c8;
-  max-width: 24rem;
+  font-size: 0.95rem;
   letter-spacing: 0;
+  color: #8d8d93;
 }
 
 .paper {
@@ -232,13 +217,13 @@ a:hover {
 }
 
 h2 {
-  margin: 0 0 1.35rem;
+  margin: 0 0 1.1rem;
   font-family: var(--display);
   font-optical-sizing: auto;
-  font-weight: 500;
-  font-size: clamp(2rem, 4.2vw, 3.05rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: clamp(2.15rem, 4.5vw, 3.4rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
 }
 
 .copy p {
@@ -255,11 +240,6 @@ h2 {
 
 .cast.space {
   margin-top: 1.4rem;
-}
-
-.lede {
-  font-size: 1.2rem;
-  line-height: 1.45;
 }
 
 .lane-pair {
@@ -282,44 +262,24 @@ h2 {
 .lane h3 {
   margin: 0 0 0.65rem;
   font-family: var(--display);
-  font-weight: 600;
-  font-size: 1.65rem;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 1.85rem;
+  letter-spacing: -0.03em;
 }
 
 .lane p {
   margin: 0;
-  font-size: 0.98rem;
 }
 
 .lane-kicker {
   display: block;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--amber-ink);
   margin-bottom: 0.35rem;
-}
-
-dl.facts {
-  margin: 1.5rem 0 0;
-  display: grid;
-  grid-template-columns: 7.5rem 1fr;
-  row-gap: 0.55rem;
-  column-gap: 1rem;
-  font-size: 0.95rem;
-}
-
-dl.facts dt {
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  padding-top: 0.28rem;
-}
-
-dl.facts dd {
-  margin: 0;
 }
 
 .cast {
@@ -328,14 +288,6 @@ dl.facts dd {
 
 .cast + .cast {
   margin-top: 2.25rem;
-}
-
-.cast-head {
-  margin: 0 0 0.85rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  color: var(--muted);
 }
 
 .cast-row {
@@ -352,9 +304,9 @@ dl.facts dd {
 .role {
   font-family: var(--display);
   font-optical-sizing: auto;
-  font-weight: 600;
-  font-size: 1.35rem;
-  letter-spacing: -0.015em;
+  font-weight: 700;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
   line-height: 1.15;
   flex: 0 0 auto;
 }
@@ -371,7 +323,7 @@ dl.facts dd {
 .duty {
   flex: 0 1 auto;
   max-width: 55%;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   color: #2a2a2e;
   text-align: right;
   line-height: 1.35;
@@ -387,24 +339,24 @@ dl.facts dd {
 
 .prompt-book figcaption {
   margin: 0 0 1.1rem;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  font-family: var(--sans);
+  font-size: 1rem;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
 .prompt-book .log {
   margin: 0;
   font-family: var(--mono);
-  font-size: 0.78rem;
-  line-height: 1.72;
+  font-size: 0.9rem;
+  line-height: 1.75;
   color: var(--ink);
-  min-width: 42rem;
+  min-width: 34rem;
 }
 
 .prompt-line {
   display: grid;
-  grid-template-columns: 7.6rem 18.5rem 1fr;
+  grid-template-columns: 5.6rem 13.5rem 1fr;
   column-gap: 0.85rem;
   white-space: pre;
 }
@@ -437,60 +389,6 @@ dl.facts dd {
   }
 }
 
-.steps {
-  list-style: none;
-  margin: 0.4rem 0 0;
-  padding: 0;
-}
-
-.steps li {
-  display: grid;
-  grid-template-columns: 2.1rem 1fr;
-  column-gap: 0.9rem;
-  margin: 0 0 1.05rem;
-  align-items: start;
-}
-
-.steps li:last-child {
-  margin-bottom: 0;
-}
-
-.num {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--muted);
-  padding-top: 0.2rem;
-}
-
-.steps strong {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 1.2rem;
-  letter-spacing: -0.015em;
-}
-
-.steps span {
-  display: block;
-  margin-top: 0.15rem;
-}
-
-.not-list {
-  list-style: none;
-  margin: 0.2rem 0 0;
-  padding: 0;
-}
-
-.not-list li {
-  margin: 0 0 1rem;
-  padding-left: 0;
-}
-
-.not-list strong {
-  font-family: var(--display);
-  font-weight: 600;
-  font-size: 1.2rem;
-}
-
 .notes p + p {
   margin-top: 1.05rem;
 }
@@ -510,10 +408,9 @@ dl.facts dd {
 .tag {
   margin: 2.5rem 0 0;
   font-family: var(--display);
-  font-style: italic;
-  font-weight: 500;
-  font-size: 1.65rem;
-  letter-spacing: -0.02em;
+  font-weight: 700;
+  font-size: 1.85rem;
+  letter-spacing: -0.03em;
 }
 
 @media (max-width: 52rem) {
@@ -549,15 +446,6 @@ dl.facts dd {
     padding: 3.1rem 0;
   }
 
-  dl.facts {
-    grid-template-columns: 1fr;
-    row-gap: 0.15rem;
-  }
-
-  dl.facts dt {
-    padding-top: 0.7rem;
-  }
-
   .prompt-line {
     grid-template-columns: 7.2rem 1fr;
   }
@@ -583,8 +471,7 @@ dl.facts dd {
 
   .house .bill,
   .house .rail,
-  .house-foot,
-  .invite {
+  .house-foot {
     color: var(--muted);
   }
 

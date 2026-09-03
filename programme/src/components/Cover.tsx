@@ -6,7 +6,7 @@ import {
   useTransform,
 } from "framer-motion";
 import type { PointerEvent } from "react";
-import { cover, oneLiner } from "../copy";
+import { cover } from "../copy";
 
 export default function Cover() {
   const reduce = useReducedMotion();
@@ -67,12 +67,7 @@ export default function Cover() {
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.55, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           />
-          <p className="bill">
-            <em>{oneLiner}</em>
-            <br />
-            {cover.billSecond}
-          </p>
-          <p className="invite">{cover.invite}</p>
+          <p className="bill">{cover.bill}</p>
           <p className="house-foot">{cover.foot}</p>
         </div>
       </motion.div>
