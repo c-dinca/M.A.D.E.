@@ -16,6 +16,14 @@ const bannedWords = [
   "cutting-edge",
   "game-changing",
   "AI-powered",
+  "not built",
+  "not finished",
+  "no code yet",
+  "haven't shipped",
+  "have not shipped",
+  "nothing has run",
+  "i made this up",
+  "tbd",
 ];
 
 function walk(dir) {
