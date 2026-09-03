@@ -15,6 +15,7 @@ export default function EmptyDesk() {
           <span className="chair-seat" />
           <span className="chair-leg l" />
           <span className="chair-leg r" />
+          <span className="chair-label">empty</span>
         </div>
         <div className="desk-pr">
           <p className="mini-kicker">{viz.cveKicker}</p>
