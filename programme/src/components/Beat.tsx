@@ -2,10 +2,10 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 import Afternoon from "./viz/Afternoon";
 import CheapHalf from "./viz/CheapHalf";
-import CveGraph from "./viz/CveGraph";
+import EmptyDesk from "./viz/EmptyDesk";
 
 const visuals: Record<string, ReactNode> = {
-  "01": <CveGraph />,
+  "01": <EmptyDesk />,
   "02": <CheapHalf />,
   "03": <Afternoon />,
 };

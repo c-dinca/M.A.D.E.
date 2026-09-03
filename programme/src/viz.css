@@ -552,9 +552,9 @@
 .pass-board,
 .call-board {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
 }
 
 .exit {
@@ -660,6 +660,89 @@
   color: var(--amber-ink);
 }
 
+.term .actor,
+.pr-card .actor,
+.fail-board .actor,
+.pass-board .actor,
+.call-board .actor {
+  color: var(--ink);
+}
+
+.desk {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr;
+  gap: 0.75rem;
+  padding: 1rem;
+  align-items: stretch;
+}
+
+.cal,
+.desk-pr {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 0.9rem;
+}
+
+.cal-day {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.chair {
+  position: relative;
+  justify-self: center;
+  align-self: center;
+  width: 4.2rem;
+  height: 5.4rem;
+  grid-row: 1 / 3;
+  grid-column: 2;
+}
+
+.chair-back {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2.4rem;
+  height: 2.6rem;
+  margin-left: -1.2rem;
+  border: 2px solid rgba(245, 243, 239, 0.35);
+  border-radius: 0.7rem 0.7rem 0.2rem 0.2rem;
+}
+
+.chair-seat {
+  position: absolute;
+  left: 50%;
+  top: 2.45rem;
+  width: 3.1rem;
+  height: 0.55rem;
+  margin-left: -1.55rem;
+  border-radius: 0.2rem;
+  background: rgba(245, 243, 239, 0.28);
+}
+
+.chair-leg {
+  position: absolute;
+  top: 3rem;
+  width: 0.18rem;
+  height: 1.8rem;
+  background: rgba(245, 243, 239, 0.28);
+}
+
+.chair-leg.l {
+  left: 0.85rem;
+}
+
+.chair-leg.r {
+  right: 0.85rem;
+}
+
+.desk-pr {
+  grid-column: 1;
+}
+
 .pr-line {
   display: flex;
   align-items: center;
@@ -672,6 +755,8 @@
 
 .pr-head {
   padding: 0.65rem 0.85rem 0.2rem;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .evidence {
@@ -785,8 +870,8 @@
 
 .stage-close {
   position: relative;
-  height: 12rem;
-  margin: 0 0 2.2rem;
+  height: 16rem;
+  margin: 0;
   overflow: hidden;
   border-radius: 12px;
   background:
@@ -1017,6 +1102,15 @@
 
   .cheap {
     grid-template-columns: 1fr;
+  }
+
+  .desk {
+    grid-template-columns: 1fr;
+  }
+
+  .chair {
+    grid-row: auto;
+    grid-column: auto;
   }
 
   .station {

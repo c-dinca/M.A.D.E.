@@ -398,6 +398,10 @@ a {
 }
 
 .close {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 2.5rem;
+  align-items: center;
   padding: 8vh 0 5rem;
   border-top: 1px solid var(--hair);
 }
@@ -425,7 +429,8 @@ a {
   .lane-grid,
   .beat,
   .beat-flip,
-  .instance {
+  .instance,
+  .close {
     grid-template-columns: 1fr;
     gap: 1.25rem;
   }

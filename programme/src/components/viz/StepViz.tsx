@@ -33,17 +33,21 @@ export default function StepViz({ step }: Props) {
     case "06":
       return (
         <div className="step-viz fail-board">
-          <p className="exit fail">exit 1</p>
-          <p className="exit-sub fail">4 failed</p>
           <Actor kind="crew" name={actors.crew.name} job={actors.crew.job} compact working />
+          <div>
+            <p className="exit fail">exit 1</p>
+            <p className="exit-sub fail">4 failed</p>
+          </div>
         </div>
       );
     case "07":
       return (
         <div className="step-viz pass-board">
-          <p className="exit ok">exit 0</p>
-          <p className="exit-sub ok">412 passed</p>
           <Actor kind="crew" name={actors.crew.name} job={actors.crew.job} compact />
+          <div>
+            <p className="exit ok">exit 0</p>
+            <p className="exit-sub ok">412 passed</p>
+          </div>
         </div>
       );
     case "08":

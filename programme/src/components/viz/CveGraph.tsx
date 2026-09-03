@@ -1,12 +1,7 @@
-import { actors, viz } from "../../copy";
-import Actor from "./Actor";
+import { viz } from "../../copy";
 import VizPanel from "./VizPanel";
 
-type Props = {
-  waiting?: boolean;
-};
-
-export default function CveGraph({ waiting }: Props) {
+export default function CveGraph() {
   return (
     <VizPanel
       kicker={viz.cveKicker}
@@ -43,14 +38,7 @@ export default function CveGraph({ waiting }: Props) {
         <span>{viz.cvePr}</span>
         <span className="fail-mark">{viz.cveBuild}</span>
       </div>
-      {waiting ? (
-        <div className="cve-wait">
-          <Actor kind="crew" name={actors.crew.name} job={actors.crew.job} compact />
-          <p className="cve-caption">{viz.cveCaption}</p>
-        </div>
-      ) : (
-        <p className="cve-caption">{viz.cveCaption}</p>
-      )}
+      <p className="cve-caption">{viz.cveCaption}</p>
     </VizPanel>
   );
 }

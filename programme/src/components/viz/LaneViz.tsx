@@ -26,7 +26,7 @@ export function JudgementLane() {
     <div className="lane-viz" role="img" aria-label="The Prompter comments through evidence. One comment is demonstrated. One is unverified.">
       <div className="pr-card">
         <div className="pr-head">
-          <Actor kind="prompter" name={actors.prompter.name} job={actors.prompter.job} compact />
+          <Actor kind="prompter" name={actors.prompter.name} job={actors.prompter.job} />
         </div>
         <article className="evidence">
           <p className="evidence-test">test_billing_legacy</p>

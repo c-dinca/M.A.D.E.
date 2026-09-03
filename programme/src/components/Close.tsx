@@ -27,10 +27,12 @@ export default function Close() {
       </motion.section>
       <section className="close">
         <StageClose />
-        <h2>{close.title}</h2>
-        <p className="tag">{close.tag}</p>
-        <p className="note">{close.note}</p>
-        <Wordmark />
+        <div className="close-copy">
+          <h2>{close.title}</h2>
+          <p className="tag">{close.tag}</p>
+          <p className="note">{close.note}</p>
+          <Wordmark />
+        </div>
       </section>
     </>
   );

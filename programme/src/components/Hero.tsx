@@ -32,7 +32,7 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.95, delay: 0.22, ease: [0.22, 1, 0.36, 1] }}
         >
-          <CveGraph waiting />
+          <CveGraph />
         </motion.div>
       </div>
     </section>
