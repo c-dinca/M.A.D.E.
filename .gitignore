@@ -57,3 +57,7 @@ bench/*.tmp.json
 # Generated documentation output
 site/
 docs/_build/
+
+# Programme site (Vite)
+node_modules/
+programme/dist/
